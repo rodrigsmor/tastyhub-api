@@ -1,0 +1,13 @@
+FROM gradle:8.5-jdk17
+
+WORKDIR /app
+
+# Copia só os arquivos de build (cache)
+COPY build.gradle settings.gradle gradle.properties* ./
+COPY gradle ./gradle
+
+RUN gradle build -x test || true
+
+EXPOSE 8080
+
+CMD ["gradle", "bootRun"]
