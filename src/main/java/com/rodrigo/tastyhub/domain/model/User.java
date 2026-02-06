@@ -6,7 +6,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -40,6 +47,15 @@ public class User {
 
     @NotBlank
     private String password;
+
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -89,6 +105,10 @@ public class User {
         return updatedAt;
     }
 
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -129,6 +149,16 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return this.roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .collect(Collectors.toList());
+    }
+
     public User() {}
 
     public User(
@@ -140,6 +170,7 @@ public class User {
             String username,
             String bio,
             String password,
+            Set<Role> roles,
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt
     ) {
@@ -150,6 +181,7 @@ public class User {
         this.phone = phone;
         this.username = username;
         this.bio = bio;
+        this.roles = roles;
         this.password = password;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
