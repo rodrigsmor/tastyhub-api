@@ -7,10 +7,7 @@ import com.rodrigo.tastyhub.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.domain.service.AuthService;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -29,5 +26,15 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginDto) {
         return authService.login(loginDto);
+    }
+
+    @GetMapping("/refresh")
+    public ResponseEntity<LoginResponseDto> refreshToken(@RequestParam String token) {
+        return authService.refreshToken(token);
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<LoginResponseDto> verifyEmail(@RequestParam String token) {
+        return authService.verifyEmail(token);
     }
 }
