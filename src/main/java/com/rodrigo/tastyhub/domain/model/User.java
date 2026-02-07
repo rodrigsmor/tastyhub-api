@@ -22,46 +22,41 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 100)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @NotBlank
-    @Size(max = 150)
+    @Column(name = "last_name", nullable = false, length = 150)
     private String lastName;
 
-    @NotBlank
-    @Email
-    @Size(max = 92)
+    @Column(nullable = false, unique = true, length = 92)
     private String email;
 
-    @Size(max = 50)
+    @Column(unique = true, length = 50)
     private String phone;
 
-    @NotBlank
-    @Size(max = 20)
+    @Column(nullable = false, unique = true, length = 20)
     private String username;
 
-    @Size(max = 280)
+    @Column(length = 280)
     private String bio;
 
-    @NotBlank
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
     public Long getId() {
