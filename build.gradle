@@ -29,6 +29,8 @@ dependencies {
 	implementation 'org.springframework.security:spring-security-config'
 
 	implementation 'io.jsonwebtoken:jjwt:0.13.0'
+	compileOnly 'org.projectlombok:lombok:1.18.42'
+	annotationProcessor 'org.projectlombok:lombok:1.18.42'
 	runtimeOnly "io.jsonwebtoken:jjwt-impl:0.13.0"
 	runtimeOnly "io.jsonwebtoken:jjwt-jackson:0.13.0"
 
