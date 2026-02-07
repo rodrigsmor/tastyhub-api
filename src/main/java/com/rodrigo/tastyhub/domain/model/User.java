@@ -48,7 +48,6 @@ public class User {
     @NotBlank
     private String password;
 
-
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -155,7 +154,7 @@ public class User {
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .map(role -> new SimpleGrantedAuthority(role.getName().authority()))
                 .collect(Collectors.toList());
     }
 
