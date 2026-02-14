@@ -72,6 +72,7 @@ com.tastyhub
  ├── domain          # Business rules and domain models
  ├── application     # Use cases and DTOs
  ├── interfaces      # REST and WebSocket controllers
+ ├── exception       # Global error handling and domain exception definitions
  ├── infrastructure  # Persistence, security, cache, messaging
  └── config          # Technical configurations
 ```
@@ -103,27 +104,31 @@ cd tastyhub-api
 At the root of the project, create a `.env` file and add the following variables (example):
 
 ```env
-SPRING_PROFILES_ACTIVE= # prod or dev
+SPRING_PROFILES_ACTIVE=     # Active profile (prod or dev)
 
-# Database ENVs
-DB_URL={DATABASE URL}
-DB_USERNAME={DATABASE USERNAME}
-DB_PASSWORD={DATABASE PASSWORD}
+# Database Configuration
 
-# Sprign Security
-SPRING_SECURITY_USERNAME=
-SPRING_SECURITY_PASSWORD=
+DB_URL=                     # Database connection URL (e.g., jdbc:postgresql://localhost:5432/tastyhub)
+DB_USERNAME=                # Database user credentials
+DB_PASSWORD=                # Database password
 
-# Postgres
-POSTGRES_DB=
-POSTGRES_USER=
-POSTGRES_PASSWORD=
+# Spring Security
+
+SPRING_SECURITY_USERNAME=   # (Optional) Basic Auth username
+SPRING_SECURITY_PASSWORD=   # (Optional) Basic Auth password
+
+# Postgres (Docker/Local Setup)
+
+POSTGRES_DB=                # Name of the PostgreSQL database
+POSTGRES_USER=              # PostgreSQL administrative user
+POSTGRES_PASSWORD=          # PostgreSQL administrative password
 
 # JWT Configuration
-JWT_SECRET=
-JWT_EXPIRATION=
-JWT_SECRET_KEY=
-JWT_ISSUER=
+
+JWT_SECRET=                 # Secret key for signing tokens
+JWT_EXPIRATION=             # Token expiration time (e.g., in milliseconds)
+JWT_SECRET_KEY=             # Additional secret key or encoded string if required
+JWT_ISSUER=                 # Registered claim identifying the token provider (e.g., tastyhub-api)
 ```
 
 👉 Don’t forget to replace the values according to your context (username, password, database name, etc.).
@@ -197,6 +202,8 @@ docker run -p 8080:8080 tastyhub-api
 
 5. The application will be available at `http://localhost:8080`.
 
+Documentation UI will be available at `http://localhost:8080/swagger-ui/index.html`.
+
 ---
 
 ### 🔩 Hands On
@@ -232,7 +239,7 @@ java -jar build/libs/your-project-0.0.1-SNAPSHOT.jar
 
 <img style="border-radius: 50%" src="https://avatars.githubusercontent.com/u/78985382?s=460&u=421fd89ba15c63b87559a53804a6b850f5890575&v=4" width="100" alt="Rodrigo Moreira profile picture">
 <h5>Rodrigo Moreira 🌠</h5>
-<p>🌐 Developed by <b> <i>Rodrigo Moreira da Silva </b> </i> 👨🏽‍💼❤️
+<p>🌐👨🏽‍💼 Developed with ♥️ by <b><i>Rodrigo Moreira da Silva</i></b> </p>
 
 [![Badge Twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/psrodrigs)
 [![Badge Linkedin](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/psrodrigomoreira/)
