@@ -4,15 +4,14 @@ import com.rodrigo.tastyhub.application.dto.request.LoginRequestDto;
 import com.rodrigo.tastyhub.application.dto.request.SignupRequestDto;
 import com.rodrigo.tastyhub.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.application.dto.response.SignupResponseDto;
-import com.rodrigo.tastyhub.domain.model.Role;
-import com.rodrigo.tastyhub.domain.model.User;
-import com.rodrigo.tastyhub.domain.model.UserRole;
-import com.rodrigo.tastyhub.domain.model.UserStatus;
+import com.rodrigo.tastyhub.domain.model.*;
 import com.rodrigo.tastyhub.domain.repository.RefreshTokenRepository;
 import com.rodrigo.tastyhub.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.domain.repository.VerificationTokenRepository;
+import com.rodrigo.tastyhub.exceptions.ExpiredTokenException;
 import com.rodrigo.tastyhub.exceptions.InfrastructureException;
+import com.rodrigo.tastyhub.exceptions.InvalidTokenException;
 import com.rodrigo.tastyhub.infrastructure.security.JwtGenerator;
 import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,16 +33,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 class AuthServiceTest {
@@ -260,6 +257,113 @@ class AuthServiceTest {
             assertEquals("mocked-jwt-token", response.getBody().accessToken());
 
             assertEquals(authentication, SecurityContextHolder.getContext().getAuthentication());
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for Refresh Token method")
+    class refreshTokenTests {
+        @Test
+        @DisplayName("Should throw InvalidToken when the provided token is not recorded")
+        void shouldThrowInvalidTokenWhenTokenIsNotRecorded() {
+            String token = "wrong-token";
+
+            when(refreshTokenRepository.findByToken(token))
+                .thenThrow(new InvalidTokenException("Invalid refresh token."));
+
+            assertThrows(InvalidTokenException.class, () -> {
+                authService.refreshToken(token);
+            });
+
+            verify(refreshTokenRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Should throw ExpiredToken when refresh token is expired")
+        void shouldThrowExpiredTokenWhenRefreshTokenIsExpired() {
+            String token = "refresh-token";
+
+            User user = new User();
+
+            LocalDateTime pastDate = LocalDateTime.now().minusDays(7);
+
+            RefreshToken refreshToken = new RefreshToken(
+                0L,
+                token,
+                user,
+                pastDate,
+                false
+            );
+
+            when(refreshTokenRepository.findByToken(token)).thenReturn(Optional.of(refreshToken));
+
+            assertThrows(ExpiredTokenException.class, () -> {
+                authService.refreshToken(token);
+            });
+
+            verify(refreshTokenRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Should throw ExpiredToken when refresh token is revoked")
+        void shouldThrowExpiredTokenWhenRefreshTokenIsRevoked() {
+            String token = "refresh-token";
+
+            User user = new User();
+
+            LocalDateTime nextMonth = LocalDateTime.now().plusMonths(1);
+
+            RefreshToken refreshToken = new RefreshToken(
+                0L,
+                token,
+                user,
+                nextMonth,
+                true
+            );
+
+            when(refreshTokenRepository.findByToken(token)).thenReturn(Optional.of(refreshToken));
+
+            assertThrows(ExpiredTokenException.class, () -> {
+                authService.refreshToken(token);
+            });
+
+            verify(refreshTokenRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Should refresh token successfully when token is valid")
+        void refreshTokenSuccess() {
+            String oldTokenValue = "old-valid-refresh-token";
+            User user = new User();
+            user.setEmail("user@example.com");
+
+            RefreshToken refreshToken = new RefreshToken(
+                0L,
+                oldTokenValue,
+                user,
+                LocalDateTime.now().plusMonths(1),
+                false
+            );
+
+
+            when(refreshTokenRepository.findByToken(oldTokenValue))
+                .thenReturn(Optional.of(refreshToken));
+
+            when(jwtGenerator.generateToken(any(Authentication.class)))
+                .thenReturn("new-access-token");
+
+            ResponseEntity<LoginResponseDto> response = authService.refreshToken(oldTokenValue);
+
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals("new-access-token", response.getBody().accessToken());
+
+            verify(refreshTokenRepository).delete(refreshToken);
+
+            verify(refreshTokenRepository).save(any(RefreshToken.class));
+
+            assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+            assertEquals(user.getEmail(), SecurityContextHolder.getContext().getAuthentication().getName());
         }
     }
 }
