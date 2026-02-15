@@ -35,10 +35,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.time.LocalDateTime;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -364,6 +361,88 @@ class AuthServiceTest {
 
             assertNotNull(SecurityContextHolder.getContext().getAuthentication());
             assertEquals(user.getEmail(), SecurityContextHolder.getContext().getAuthentication().getName());
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for Verify E-mail method")
+    class verifyEmailTests {
+        @Test
+        @DisplayName("Should throw InvalidToken when the email's verification token is not recorded")
+        void shouldThrowInvalidTokenWhenTokenIsNotRecorded() {
+            String token = "wrong-token";
+
+            when(verificationTokenRepository.findByToken(token))
+                .thenThrow(new InvalidTokenException("Invalid refresh token."));
+
+            assertThrows(InvalidTokenException.class, () -> {
+                authService.verifyEmail(token);
+            });
+
+            verify(userRepository, never()).save(any());
+            verify(verificationTokenRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Should throw ExpiredToken when verification token is expired")
+        void shouldThrowExpiredTokenWhenRefreshTokenIsExpired() {
+            String token = "refresh-token";
+
+            User user = new User();
+
+            LocalDateTime pastDate = LocalDateTime.now().minusDays(7);
+
+            VerificationToken verificationToken = new VerificationToken(
+                0L,
+                token,
+                user,
+                pastDate
+            );
+
+            when(verificationTokenRepository.findByToken(token)).thenReturn(Optional.of(verificationToken));
+
+            assertThrows(ExpiredTokenException.class, () -> {
+                authService.verifyEmail(token);
+            });
+
+            verify(userRepository, never()).save(any());
+            verify(verificationTokenRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Should verify email successfully and start onboarding")
+        void verifyEmailSuccess() {
+            String validToken = "valid-uuid-token";
+
+            User user = new User();
+            user.setEmail("rodrigo@tastyhub.com");
+            user.setStatus(UserStatus.ACTIVE);
+
+            VerificationToken vToken = new VerificationToken();
+            vToken.setToken(validToken);
+            vToken.setUser(user);
+            vToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+
+            when(verificationTokenRepository.findByToken(validToken))
+                .thenReturn(Optional.of(vToken));
+
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+            when(jwtGenerator.generateToken(any(Authentication.class)))
+                .thenReturn("generated-access-token");
+
+            ResponseEntity<LoginResponseDto> response = authService.verifyEmail(validToken);
+
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals("generated-access-token", response.getBody().accessToken());
+
+            assertNotEquals(UserStatus.PENDING, user.getStatus());
+
+            verify(userRepository).save(user);
+            verify(verificationTokenRepository).delete(vToken);
+
+            assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         }
     }
 }
