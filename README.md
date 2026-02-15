@@ -59,7 +59,7 @@ The main goal is not just to deliver features, but to **explore real-world trade
 
 ### 🗄️ Database Structure
 
-![Database Structure](https://res.cloudinary.com/dbrvgleaj/image/upload/v1770427102/tastyhub-db_cvkogc.png)
+![Database Structure](https://res.cloudinary.com/dbrvgleaj/image/upload/v1771158322/tastyhub-db_u1jcwk.png)
 
 ### 🏗️ System Design
 
