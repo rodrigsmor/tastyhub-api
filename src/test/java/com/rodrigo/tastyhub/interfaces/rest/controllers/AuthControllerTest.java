@@ -22,10 +22,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.net.URI;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -132,6 +132,39 @@ class AuthControllerTest {
                     .content(objectMapper.writeValueAsString(request))
                 )
                 .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for GET /auth/refresh")
+    class RefreshTokenTests {
+        @Test
+        @DisplayName("Should return 200 when refresh token is valid")
+        void refreshTokenSuccess() throws Exception {
+            String token = "valid-refresh-token";
+            LoginResponseDto response = new LoginResponseDto("new-access", "new-refresh", "Bearer ");
+
+            when(authService.refreshToken(token)).thenReturn(ResponseEntity.ok(response));
+
+            mockMvc.perform(get("/auth/refresh")
+                    .param("token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new-access"))
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh"));
+        }
+
+        @Test
+        @DisplayName("Should return 400 when token is invalid or expired")
+        void refreshTokenFail() throws Exception {
+            String token = "invalid-token";
+
+            when(authService.refreshToken(token))
+                .thenThrow(new com.rodrigo.tastyhub.exceptions.InvalidTokenException("Invalid refresh token."));
+
+            mockMvc.perform(get("/auth/refresh")
+                    .param("token", token)
+                )
+                .andExpect(status().isBadRequest());
         }
     }
 }
