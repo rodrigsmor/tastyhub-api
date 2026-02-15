@@ -167,4 +167,37 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest());
         }
     }
+
+    @Nested
+    @DisplayName("Tests for GET /auth/verify-email")
+    class VerifyEmailTests {
+
+        @Test
+        @DisplayName("Should return 200 and authenticate user when verification is valid")
+        void verifyEmailSuccess() throws Exception {
+            String token = "valid-verify-token";
+            LoginResponseDto response = new LoginResponseDto("access", "refresh", "Bearer ");
+
+            when(authService.verifyEmail(token)).thenReturn(ResponseEntity.ok(response));
+
+            mockMvc.perform(get("/auth/verify-email")
+                    .param("token", token)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("access"));
+        }
+
+        @Test
+        @DisplayName("Should return 410 (Gone) or 401 when link is expired")
+        void verifyEmailExpired() throws Exception {
+            String token = "expired-token";
+
+            when(authService.verifyEmail(token))
+                .thenThrow(new com.rodrigo.tastyhub.exceptions.ExpiredTokenException("This verification link has expired."));
+
+            mockMvc.perform(get("/auth/verify-email")
+                    .param("token", token))
+                .andExpect(status().isUnauthorized());
+        }
+    }
 }
