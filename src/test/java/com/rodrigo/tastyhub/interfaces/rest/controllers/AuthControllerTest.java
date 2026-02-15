@@ -1,7 +1,9 @@
 package com.rodrigo.tastyhub.interfaces.rest.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rodrigo.tastyhub.application.dto.request.LoginRequestDto;
 import com.rodrigo.tastyhub.application.dto.request.SignupRequestDto;
+import com.rodrigo.tastyhub.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.domain.service.AuthService;
 import org.apache.coyote.BadRequestException;
@@ -86,6 +88,50 @@ class AuthControllerTest {
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("This email is already in use!"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for /auth/login")
+    class LoginTests {
+        @Test
+        @DisplayName("Should return 200 and tokens when credentials are valid")
+        void loginSuccess() throws Exception {
+            LoginRequestDto request = new LoginRequestDto(
+                "john@email.com",
+                "Pass123!"
+            );
+            LoginResponseDto response = new LoginResponseDto(
+                "access",
+                "refresh",
+                "Bearer "
+            );
+
+            when(authService.login(any())).thenReturn(ResponseEntity.ok(response));
+
+            mockMvc.perform(post("/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("access"));
+        }
+
+        @Test
+        @DisplayName("Should return 401 when credentials are not valid")
+        void shouldReturnBadCredentialsWhenCredentialsAreInvalid() throws Exception {
+            LoginRequestDto request = new LoginRequestDto(
+                "incorrect-john@example.com",
+                "incorrect123!"
+            );
+
+            when(authService.login(any(LoginRequestDto.class)))
+                .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
+
+            mockMvc.perform(post("/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isUnauthorized());
         }
     }
 }
