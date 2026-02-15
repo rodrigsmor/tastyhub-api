@@ -1,10 +1,13 @@
 package com.rodrigo.tastyhub.domain.service;
 
+import com.rodrigo.tastyhub.application.dto.request.LoginRequestDto;
 import com.rodrigo.tastyhub.application.dto.request.SignupRequestDto;
+import com.rodrigo.tastyhub.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.domain.model.Role;
 import com.rodrigo.tastyhub.domain.model.User;
 import com.rodrigo.tastyhub.domain.model.UserRole;
+import com.rodrigo.tastyhub.domain.model.UserStatus;
 import com.rodrigo.tastyhub.domain.repository.RefreshTokenRepository;
 import com.rodrigo.tastyhub.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.domain.repository.UserRepository;
@@ -23,8 +26,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -35,6 +43,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 @SpringBootTest
 class AuthServiceTest {
@@ -139,29 +148,118 @@ class AuthServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for login method")
+    @DisplayName("Tests for Login method")
     class LoginTests {
-
         @Test
-        @DisplayName("Should login successfully when credentials are valid")
-        void loginSuccess() {
-            // Arrange (Given)
-            // Act (When)
-            // Assert (Then)
+        @DisplayName("Should throw BadCredentialsException when email or password is wrong")
+        void shouldThrowBadCredentialsExceptionWhenAuthenticationFails() {
+            LoginRequestDto loginDto = new LoginRequestDto(
+                "wrong@email.com",
+                "wrongpass"
+            );
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("Invalid email or password"));
+
+            assertThrows(BadCredentialsException.class, () -> {
+                authService.login(loginDto);
+            });
+
+            verify(jwtGenerator, never()).generateToken(any());
+            verify(userRepository, never()).findByEmail(any());
         }
 
         @Test
-        @DisplayName("Should throw AuthException when password does not match")
-        void loginInvalidPassword() {
+        @DisplayName("Should throw BadCredential when user record is not found")
+        void shouldThrowBadCredentialWhenUserIsNotFound() {
+            LoginRequestDto loginDto = new LoginRequestDto(
+                "wrong@email.com",
+                "wrongpass"
+            );
 
+            User user = new User();
+            user.setEmail(loginDto.email());
+            user.setStatus(UserStatus.ACTIVE);
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(),
+                null,
+                Collections.emptyList()
+            );
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+            when(userRepository.findByEmail(loginDto.email()))
+                .thenThrow(new BadCredentialsException("User record not found"));
+
+            assertThrows(BadCredentialsException.class, () -> {
+                authService.login(loginDto);
+            });
+
+            verify(jwtGenerator, never()).generateToken(any());
         }
-    }
 
-    @Test
-    void refreshToken() {
-    }
+        @Test
+        @DisplayName("Should throw BadCredential when User is not validated")
+        void shouldThrowBadCredentialExceptionWhenUserStatusIsPending() {
+            LoginRequestDto loginDto = new LoginRequestDto(
+                    "wrong@email.com",
+                    "wrongpass"
+            );
 
-    @Test
-    void verifyEmail() {
+            User user = new User();
+            user.setEmail(loginDto.email());
+            user.setStatus(UserStatus.PENDING);
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(),
+                null,
+                Collections.emptyList()
+            );
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenReturn(authentication);
+            when(userRepository.findByEmail(loginDto.email()))
+                    .thenReturn(Optional.of(user));
+
+            assertThrows(BadCredentialsException.class, () -> {
+                authService.login(loginDto);
+            });
+
+            verify(jwtGenerator, never()).generateToken(any());
+        }
+
+        @Test
+        @DisplayName("Should return access and refresh tokens when credentials are valid")
+        void shouldLoginSuccessfully() {
+            LoginRequestDto loginDto = new LoginRequestDto(
+                "wrong@email.com",
+                "wrongpass"
+            );
+
+            User user = new User();
+            user.setEmail(loginDto.email());
+            user.setStatus(UserStatus.ACTIVE);
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(),
+                null,
+                Collections.emptyList()
+            );
+
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenReturn(authentication);
+            when(userRepository.findByEmail(loginDto.email()))
+                    .thenReturn(Optional.of(user));
+            when(jwtGenerator.generateToken(authentication)).thenReturn("mocked-jwt-token");
+
+            ResponseEntity<LoginResponseDto> response = authService.login(loginDto);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertNotNull(response.getBody());
+            assertEquals("mocked-jwt-token", response.getBody().accessToken());
+
+            assertEquals(authentication, SecurityContextHolder.getContext().getAuthentication());
+        }
     }
 }
