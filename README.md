@@ -1,6 +1,6 @@
 <div align="center">
    <img src="https://i.ibb.co/N207VfDj/Tasty-Hub-Logo.png" alt="Tastyhub logo icon" height="120px" width="120px" />
-   <h1>MyNotes - The note management web application</h1>
+   <h1>Tastyhub — Recipe Sharing Platform</h1>
 </div>
 
 TastyHub is a back-end application developed with a strong focus on **Software Architecture best practices**, **System Design**, and **Web Security**.
