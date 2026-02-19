@@ -73,13 +73,13 @@ public class User {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "on_boarding_status", length = 50)
-    private OnBoardingStatus onBoardingStatus = OnBoardingStatus.PENDING_VERIFICATION;
+    @Column(name = "status", length = 20)
+    private UserStatus status = UserStatus.PENDING;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 20)
-    private UserStatus status = UserStatus.PENDING;
+    @Column(name = "on_boarding_status", length = 50)
+    private OnBoardingStatus onBoardingStatus = OnBoardingStatus.PENDING_VERIFICATION;
 
     @Column(name = "on_boarding_started_at")
     private OffsetDateTime onBoardingStartedAt;
@@ -97,8 +97,8 @@ public class User {
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName().authority()))
-                .collect(Collectors.toList());
+            .map(role -> new SimpleGrantedAuthority(role.getName().authority()))
+            .collect(Collectors.toList());
     }
 
     public void startOnboarding() {
