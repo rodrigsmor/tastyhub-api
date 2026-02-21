@@ -42,6 +42,10 @@ The main goal is not just to deliver features, but to **explore real-world trade
 * **Architectural Style:** Modular Monolith
 * **Approach:** Clean Architecture (inspired by Hexagonal / Ports & Adapters)
 * **Layers:**
+  * **Application:** Orchestrates use cases and coordinates domain logic. Handles DTOs and application workflows.
+  * **Domain:** Contains core business rules, entities, value objects, and repository contracts. Framework-independent.
+  * **Infrastructure:** Provides technical implementations such as database persistence, security, messaging, and caching.
+  * **Interfaces (Delivery Layer):** Entry points of the system, such as REST controllers, WebSocket endpoints, and event listeners.
 
 ### ⚙️ Technologies
 
@@ -69,12 +73,44 @@ The main goal is not just to deliver features, but to **explore real-world trade
 
 ```text
 com.tastyhub
- ├── domain          # Business rules and domain models
- ├── application     # Use cases and DTOs
- ├── interfaces      # REST and WebSocket controllers
- ├── exception       # Global error handling and domain exception definitions
- ├── infrastructure  # Persistence, security, cache, messaging
- └── config          # Technical configurations
+├── modules                    # Business modules organized by bounded context (modular monolith approach)
+│   ├── auth
+│   │   ├── application        # Application layer: orchestrates use cases and coordinates domain logic
+│   │   │   ├── usecase        # Application use cases (command/query handlers implementing business flows)
+│   │   │   ├── dto            # Data Transfer Objects used for input/output boundaries
+│   │   │   └── mapper         # Mapping logic between Domain models and DTOs
+│   │   │   
+│   │   ├── domain             # Core business logic and domain rules (framework-independent)
+│   │   │   ├── annotations    # Custom domain-level annotations (e.g., business constraints)
+│   │   │   ├── event          # Domain events representing significant business occurrences
+│   │   │   ├── model          # Aggregates, Entities, Value Objects, and Enums
+│   │   │   ├── repository     # Repository contracts (interfaces) defining persistence operations
+│   │   │   ├── service        # Domain services containing complex business logic
+│   │   │   └── policy         # Business policies and rule objects encapsulating decision logic
+│   │   │   
+│   │   ├── infrastructure     # Technical implementations of external concerns
+│   │   │   ├── aspect         # Cross-cutting concerns (AOP: logging, auditing, transactions)
+│   │   │   ├── persistence    # Repository implementations, JPA mappings, database adapters
+│   │   │   ├── security       # Security configurations and authentication providers
+│   │   │   ├── messaging      # Kafka/RabbitMQ producers, consumers, and integration adapters
+│   │   │   └── cache          # Redis integrations and caching strategies
+│   │   │   
+│   │   └── interfaces         # Entry points into the application (delivery layer)
+│   │       ├── controller     # REST controllers exposing HTTP endpoints
+│   │       ├── websocket      # WebSocket endpoints for real-time communication
+│   │       └── listener       # Event listeners (application or messaging-driven)
+│   │ 
+│   ├── user                   
+│   ├── recipes                              
+│   ├── articles                              
+│   │   ...other modules
+│   └── comments
+│
+└── shared
+    ├── exception              # Global exception handling and base domain exception classes
+    ├── dto                    # Shared DTOs used across modules (avoid overusing)
+    ├── kernel                 # Core abstractions and base classes shared across the system
+    └── config                 # Global technical configurations (Spring, security, serialization, etc.)
 ```
 
 ---
