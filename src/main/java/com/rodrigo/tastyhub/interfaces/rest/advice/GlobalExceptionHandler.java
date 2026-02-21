@@ -1,9 +1,7 @@
 package com.rodrigo.tastyhub.interfaces.rest.advice;
 
 import com.rodrigo.tastyhub.application.dto.response.ErrorResponseDto;
-import com.rodrigo.tastyhub.exceptions.ExpiredTokenException;
-import com.rodrigo.tastyhub.exceptions.InfrastructureException;
-import com.rodrigo.tastyhub.exceptions.InvalidTokenException;
+import com.rodrigo.tastyhub.exceptions.*;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -79,5 +77,35 @@ public class GlobalExceptionHandler {
             LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(OnboardingException.class)
+    public ResponseEntity<ErrorResponseDto> handleOnboardingException(OnboardingException ex) {
+        ErrorResponseDto error = new ErrorResponseDto(
+            ex.getMessage(),
+            HttpStatus.FORBIDDEN.value(),
+            LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponseDto> handleUnauthorizedException(UnauthorizedException ex) {
+        ErrorResponseDto error = new ErrorResponseDto(
+            ex.getMessage(),
+            HttpStatus.UNAUTHORIZED.value(),
+            LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        ErrorResponseDto error = new ErrorResponseDto(
+            ex.getMessage(),
+            HttpStatus.NOT_FOUND.value(),
+            LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 }

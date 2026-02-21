@@ -49,8 +49,7 @@ public class WebSecurityConfig {
                     "/auth/login",
                     "/auth/signup",
                     "/auth/refresh-token",
-                    "/auth/verify-email",
-                    "/auth/onboarding/**"
+                    "/auth/verify-email"
                 ).permitAll()
                 .requestMatchers("/auth/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/auth/admin/**").hasAuthority("ROLE_ADMIN")

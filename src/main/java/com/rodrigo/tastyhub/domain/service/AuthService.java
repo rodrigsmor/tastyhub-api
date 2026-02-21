@@ -103,7 +103,7 @@ public class AuthService {
         User user = userRepository.findByEmail(loginDto.email())
             .orElseThrow(() -> new BadCredentialsException("User record not found"));
 
-        if (user.getStatus() == UserStatus.PENDING) {
+        if (!user.isVerified()) {
             throw new BadCredentialsException("Please verify your email before logging in");
         }
 
