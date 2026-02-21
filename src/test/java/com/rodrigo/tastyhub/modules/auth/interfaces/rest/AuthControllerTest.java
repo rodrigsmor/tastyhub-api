@@ -45,7 +45,7 @@ class AuthControllerTest {
     private AuthService authService;
 
     @Nested
-    @DisplayName("Tests for /auth/signup")
+    @DisplayName("Tests for /api/auth/signup")
     class SignupTests {
         @Test
         @DisplayName("Should return 201 when signup is successful")
@@ -93,7 +93,7 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("Tests for /auth/login")
+    @DisplayName("Tests for /api/auth/login")
     class LoginTests {
         @Test
         @DisplayName("Should return 200 and tokens when credentials are valid")
@@ -137,7 +137,47 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("Tests for GET /auth/refresh")
+    @DisplayName("Tests for /api/auth/logout")
+    class LogoutTests {
+
+        @Test
+        @DisplayName("Should return 204 when logout is successful")
+        void logoutSuccess() throws Exception {
+            String refreshToken = "valid-refresh-token";
+
+            when(authService.logOut(refreshToken)).thenReturn(ResponseEntity.noContent().build());
+
+            mockMvc.perform(post("/api/auth/logout")
+                    .header("X-Refresh-Token", refreshToken) // Header obrigatório
+                    .header("Authorization", "Bearer valid-access-token")) // Simula o SecurityRequirement
+                .andExpect(status().isNoContent());
+
+            verify(authService, times(1)).logOut(refreshToken);
+        }
+
+        @Test
+        @DisplayName("Should return 400 when refresh token is invalid")
+        void logoutWithInvalidToken() throws Exception {
+            String invalidToken = "invalid-token";
+
+            when(authService.logOut(invalidToken))
+                    .thenThrow(new BadRequestException("Invalid refresh token."));
+
+            mockMvc.perform(post("/api/auth/logout")
+                    .header("X-Refresh-Token", invalidToken))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should return 400 when X-Refresh-Token header is missing")
+        void logoutMissingHeader() throws Exception {
+            mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for GET /api/auth/refresh")
     class RefreshTokenTests {
         @Test
         @DisplayName("Should return 200 when refresh token is valid")
@@ -170,7 +210,7 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("Tests for GET /auth/verify-email")
+    @DisplayName("Tests for GET /api/auth/verify-email")
     class VerifyEmailTests {
 
         @Test

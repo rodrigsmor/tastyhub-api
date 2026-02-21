@@ -264,6 +264,49 @@ class AuthServiceTest {
     }
 
     @Nested
+    @DisplayName("Tests for Log Out method")
+    class LogOutTests {
+
+        @Mock
+        private RefreshTokenRepository refreshTokenRepository;
+
+        @InjectMocks
+        private AuthService authService;
+
+        @Test
+        @DisplayName("Should successfully delete refresh token when it exists")
+        void shouldLogOutSuccessfully() throws BadRequestException {
+            String refreshToken = "valid-token-123";
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setToken(refreshToken);
+
+            when(refreshTokenRepository.findByToken(refreshToken))
+                    .thenReturn(Optional.of(tokenEntity));
+
+            ResponseEntity<Void> response = authService.logOut(refreshToken);
+
+            assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+            verify(refreshTokenRepository, times(1)).delete(tokenEntity);
+            verify(refreshTokenRepository, times(1)).findByToken(refreshToken);
+        }
+
+        @Test
+        @DisplayName("Should throw BadRequestException when token is not found")
+        void shouldThrowExceptionWhenTokenNotFound() {
+            String refreshToken = "non-existent-token";
+            when(refreshTokenRepository.findByToken(refreshToken))
+                .thenReturn(Optional.empty());
+
+            BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+                authService.logOut(refreshToken);
+            });
+
+            assertEquals("Refresh token is missing or invalid", exception.getMessage());
+            verify(refreshTokenRepository, never()).delete(any());
+        }
+    }
+
+    @Nested
     @DisplayName("Tests for Refresh Token method")
     class refreshTokenTests {
         @Test
