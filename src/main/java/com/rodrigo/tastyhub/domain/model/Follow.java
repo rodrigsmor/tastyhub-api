@@ -20,10 +20,12 @@ public class Follow {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("followerId")
+    @JoinColumn(name = "follower_user_id")
     private User follower;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("followingId")
+    @JoinColumn(name = "following_user_id")
     private User following;
 
     @Column(name = "followed_at")
