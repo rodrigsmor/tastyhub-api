@@ -128,6 +128,11 @@ public class User {
             .collect(Collectors.toList());
     }
 
+    public Boolean isVerified() {
+        return this.getStatus() != UserStatus.PENDING
+            && this.getOnBoardingStatus() != OnBoardingStatus.PENDING_VERIFICATION;
+    }
+
     public void startOnboarding() {
         if (this.onBoardingStatus != OnBoardingStatus.PENDING_VERIFICATION) {
             throw new IllegalStateException("Cannot start onboarding from current state");
