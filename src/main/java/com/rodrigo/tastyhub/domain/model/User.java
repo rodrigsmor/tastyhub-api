@@ -56,6 +56,15 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_following_tags",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> followedTags = new HashSet<>();
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
@@ -70,6 +79,24 @@ public class User {
 
     @Column(name = "cover_photo_alt")
     private String coverPhotoAlt;
+
+    @Builder.Default
+    @OneToMany(
+        mappedBy = "follower",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private Set<Follow> following = new HashSet<>();
+
+    @Builder.Default
+    @OneToMany(
+        mappedBy = "following",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private Set<Follow> followers = new HashSet<>();
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -113,5 +140,33 @@ public class User {
         this.onBoardingStatus = OnBoardingStatus.COMPLETED;
         this.status = UserStatus.ACTIVE;
         this.onBoardingCompletedAt = OffsetDateTime.now();
+    }
+
+    public void followTag(Tag tag) {
+        this.followedTags.add(tag);
+        tag.getFollowers().add(this);
+    }
+
+    public void unfollowTag(Tag tag) {
+        this.followedTags.remove(tag);
+        tag.getFollowers().remove(this);
+    }
+
+    public void followUser(User targetUser) {
+        Follow follow = new Follow();
+        follow.setId(new FollowId(this.id, targetUser.getId()));
+        follow.setFollower(this);
+        follow.setFollowing(targetUser);
+        this.following.add(follow);
+    }
+
+    public void unfollowUser(User targetUser) {
+        this.following.removeIf(follow ->
+            follow.getFollowing().getId().equals(targetUser.getId())
+        );
+
+        targetUser.getFollowers().removeIf(follow ->
+            follow.getFollower().getId().equals(this.id)
+        );
     }
 }
