@@ -36,12 +36,12 @@ public class OnboardingService {
     private TagRepository tagRepository;
 
     @Transactional
-    public ResponseEntity<Void> updateIdentity(OnboardingIdentityRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
+    public ResponseEntity<Void> updateUserProfile(OnboardingIdentityRequest request) {
+        User user = securityService.getCurrentUser();
+
+        if (userRepository.existsByUsernameAndIdNot(request.username(), user.getId())) {
             throw new BadCredentialsException("Invalid input or username already taken");
         }
-
-        User user = securityService.getCurrentUser();
 
         user.setBio(request.bio());
         user.setUsername(request.username());
@@ -56,7 +56,7 @@ public class OnboardingService {
     }
 
     @Transactional
-    public ResponseEntity<Void> processInterests(
+    public ResponseEntity<Void> selectInterests(
         OnboardingInterestsRequest request,
         boolean shouldSkip
     ) {
@@ -85,7 +85,7 @@ public class OnboardingService {
     }
 
     @Transactional
-    public ResponseEntity<Void> processConnections(OnboardingConnectionsRequest request, boolean shouldSkip) {
+    public ResponseEntity<Void> followInitialUsers(OnboardingConnectionsRequest request, boolean shouldSkip) {
         User currentUser = securityService.getCurrentUser();
 
         if (shouldSkip) {
