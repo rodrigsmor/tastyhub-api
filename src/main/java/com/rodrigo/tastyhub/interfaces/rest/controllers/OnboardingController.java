@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -76,5 +77,21 @@ public class OnboardingController {
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
         return this.onboardingService.processConnections(connections, shouldSkip);
+    }
+
+    @Operation(
+        summary = "Go back to the previous onboarding step",
+        description = "Reverts the user's onboarding status to the immediate previous stage. " +
+            "This is not allowed if the user is already at the first step or has already finished the process."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Successfully reverted to the previous step"),
+        @ApiResponse(responseCode = "400", description = "Cannot go back: User is already at the initial onboarding step."),
+        @ApiResponse(responseCode = "401", description = "Account not verified. Please check your email to proceed."),
+        @ApiResponse(responseCode = "403", description = "Onboarding has already been completed. Status cannot be reverted.")
+    })
+    @PostMapping("/back")
+    public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
+        return this.onboardingService.backToPreviousStep();
     }
 }

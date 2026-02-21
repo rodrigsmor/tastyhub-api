@@ -8,8 +8,11 @@ import com.rodrigo.tastyhub.domain.model.Tag;
 import com.rodrigo.tastyhub.domain.model.User;
 import com.rodrigo.tastyhub.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.domain.repository.UserRepository;
+import com.rodrigo.tastyhub.exceptions.OnboardingException;
+import com.rodrigo.tastyhub.exceptions.UnauthorizedException;
 import com.rodrigo.tastyhub.infrastructure.security.SecurityService;
 import jakarta.transaction.Transactional;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -99,6 +102,34 @@ public class OnboardingService {
         }
 
         return finalizeOnboarding(currentUser);
+    }
+
+    @Transactional
+    public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
+        User user = securityService.getCurrentUser();
+
+        if (user.isOnboardingFinished()) {
+            throw new OnboardingException("Onboarding has already been completed. Status cannot be reverted.");        }
+
+        if (!user.isVerified()) {
+            throw new UnauthorizedException("Account not verified. Please check your email to proceed.");
+        }
+
+        OnBoardingStatus currentStatus = user.getOnBoardingStatus();
+
+        if (currentStatus == OnBoardingStatus.STEP_1) {
+            throw new BadRequestException("Cannot go back: User is already at the initial onboarding step.");
+        }
+
+        OnBoardingStatus previousStep = (currentStatus == OnBoardingStatus.STEP_3)
+            ? OnBoardingStatus.STEP_2
+            : OnBoardingStatus.STEP_1;
+
+        user.setOnBoardingStatus(previousStep);
+
+        userRepository.save(user);
+
+        return ResponseEntity.noContent().build();
     }
 
     private ResponseEntity<Void> completeStepAndResponse(User user) {
