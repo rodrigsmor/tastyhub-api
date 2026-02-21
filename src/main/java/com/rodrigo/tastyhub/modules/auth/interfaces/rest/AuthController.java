@@ -8,6 +8,7 @@ import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;
@@ -63,9 +64,11 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Invalid refresh token."),
         @ApiResponse(responseCode = "401", description = "Refresh token expired or revoked. Please log in again."),
     })
-    @GetMapping("/refresh")
-    public ResponseEntity<LoginResponseDto> refreshToken(@RequestParam String token) {
-        return authService.refreshToken(token);
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponseDto> refreshToken(
+        @RequestHeader(name = "X-Refresh-Token", required = true) String refreshToken
+    ) {
+        return authService.refreshToken(refreshToken);
     }
 
     @Operation(
@@ -78,21 +81,24 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Invalid or missing verification token."),
         @ApiResponse(responseCode = "401", description = "This verification link has expired."),
     })
-    @GetMapping("/verify-email")
-    public ResponseEntity<LoginResponseDto> verifyEmail(@RequestParam String token) {
+    @GetMapping("/verify-email/{token}")
+    public ResponseEntity<LoginResponseDto> verifyEmail(@PathVariable String token) {
         return authService.verifyEmail(token);
     }
 
     @Operation(
         summary = "Logout user and invalidate session",
-        description = "Removes the refresh token from the database, preventing new access tokens from being generated."
+        description = "Removes the refresh token from the database, preventing new access tokens from being generated.",
+        security = { @SecurityRequirement(name = "bearerAuth") }
     )
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Successfully logged out"),
         @ApiResponse(responseCode = "400", description = "Refresh token is missing or invalid")
     })
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestParam String refreshToken) throws BadRequestException {
+    public ResponseEntity<Void> logout(
+        @RequestHeader(name = "X-Refresh-Token", required = true) String refreshToken
+    ) throws BadRequestException {
         return authService.logOut(refreshToken);
     }
 }
