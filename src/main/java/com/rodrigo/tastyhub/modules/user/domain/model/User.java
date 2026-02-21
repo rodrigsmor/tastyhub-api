@@ -132,12 +132,12 @@ public class User {
     }
 
     public Boolean isVerified() {
-        return this.getStatus() != UserStatus.PENDING
-            && this.getOnBoardingStatus() != OnBoardingStatus.PENDING_VERIFICATION;
+        return this.getStatus() == UserStatus.ACTIVE
+            || this.getOnBoardingStatus() != OnBoardingStatus.PENDING_VERIFICATION;
     }
 
     public Boolean isOnboardingFinished() {
-        return this.getOnBoardingStatus() != OnBoardingStatus.COMPLETED;
+        return this.getOnBoardingStatus() == OnBoardingStatus.COMPLETED;
     }
 
     public void startOnboarding() {
