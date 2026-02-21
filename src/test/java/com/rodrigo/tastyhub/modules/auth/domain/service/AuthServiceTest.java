@@ -9,6 +9,7 @@ import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.InfrastructureException;
 import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
@@ -134,13 +135,13 @@ class AuthServiceTest {
             assertNotNull(response);
             assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-            assertTrue(response.getHeaders().getLocation().toString().contains("/auth/signup"));
+            assertTrue(response.getHeaders().getLocation().toString().contains("/api/auth/signup"));
 
             SignupResponseDto body = response.getBody();
             assertNotNull(body);
             assertEquals(signupDto.email(), body.emailSentTo());
 
-            assertTrue(body.message().contains("Verify your account!"));
+            assertTrue(body.message().contains("verify your account."));
 
             verify(userRepository, times(1)).save(any(User.class));
         }
@@ -199,11 +200,11 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw BadCredential when User is not validated")
-        void shouldThrowBadCredentialExceptionWhenUserStatusIsPending() {
+        @DisplayName("Should throw ForbiddenException when User is not validated")
+        void shouldThrowForbiddenExceptionWhenUserStatusIsPending() {
             LoginRequestDto loginDto = new LoginRequestDto(
-                    "wrong@email.com",
-                    "wrongpass"
+                "wrong@email.com",
+                "wrongpass"
             );
 
             User user = new User();
@@ -221,7 +222,7 @@ class AuthServiceTest {
             when(userRepository.findByEmail(loginDto.email()))
                     .thenReturn(Optional.of(user));
 
-            assertThrows(BadCredentialsException.class, () -> {
+            assertThrows(ForbiddenException.class, () -> {
                 authService.login(loginDto);
             });
 
