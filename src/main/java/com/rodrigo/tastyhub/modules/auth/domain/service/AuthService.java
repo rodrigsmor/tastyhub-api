@@ -87,7 +87,7 @@ public class AuthService {
 
         URI uri = URI.create(ServletUriComponentsBuilder
             .fromCurrentContextPath()
-            .path("/auth/signup")
+            .path("/api/auth/signup")
             .toUriString()
         );
 
