@@ -9,6 +9,7 @@ import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
     description = "Handles the multi-step user onboarding process, including identity setup, interest selection, and initial social connections."
 )
 @RestController
-@RequestMapping("/onboarding")
+@RequestMapping("/api/onboarding")
 public class OnboardingController {
     private final OnboardingService onboardingService;
 
@@ -30,6 +31,7 @@ public class OnboardingController {
 
     @Operation(
         summary = "Step 1: Setup Profile Identity",
+        security = { @SecurityRequirement(name = "bearerAuth") },
         description = "Updates the user's basic profile information such as username, bio, and profile picture. Moves the user to STEP_2."
     )
     @ApiResponses({
@@ -37,16 +39,17 @@ public class OnboardingController {
         @ApiResponse(responseCode = "400", description = "Invalid input or username already taken"),
         @ApiResponse(responseCode = "403", description = "Access denied: User is not in STEP_1")
     })
-    @PostMapping("/identity")
+    @PatchMapping("/profile")
     @RequiresOnboardingStep(OnBoardingStatus.STEP_1)
-    public ResponseEntity<Void> submitIdentity(
+    public ResponseEntity<Void> updateBasicProfileInformation(
         @Valid @RequestBody OnboardingIdentityRequest request
     ) {
-        return this.onboardingService.updateIdentity(request);
+        return this.onboardingService.updateUserProfile(request);
     }
 
     @Operation(
         summary = "Step 2: Select Interests and Tags",
+        security = { @SecurityRequirement(name = "bearerAuth") },
         description = "Allows the user to follow existing tags, create new ones, or skip this step. Moves the user to STEP_3."
     )
     @ApiResponses({
@@ -55,15 +58,16 @@ public class OnboardingController {
     })
     @PostMapping("/interests")
     @RequiresOnboardingStep(OnBoardingStatus.STEP_2)
-    public ResponseEntity<Void> submitInterests(
+    public ResponseEntity<Void> selectInterests(
         @Valid @RequestBody OnboardingInterestsRequest request,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
-        return this.onboardingService.processInterests(request, shouldSkip);
+        return this.onboardingService.selectInterests(request, shouldSkip);
     }
 
     @Operation(
         summary = "Step 3: Connect with Food Lovers",
+        security = { @SecurityRequirement(name = "bearerAuth") },
         description = "Finalizes the onboarding by following suggested users. Completes the onboarding process and activates the user account."
     )
     @ApiResponses({
@@ -72,15 +76,16 @@ public class OnboardingController {
     })
     @PostMapping("/connections")
     @RequiresOnboardingStep(OnBoardingStatus.STEP_3)
-    public ResponseEntity<Void> submitConnections(
+    public ResponseEntity<Void> establishConnections(
         @RequestBody OnboardingConnectionsRequest connections,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
-        return this.onboardingService.processConnections(connections, shouldSkip);
+        return this.onboardingService.followInitialUsers(connections, shouldSkip);
     }
 
     @Operation(
         summary = "Go back to the previous onboarding step",
+        security = { @SecurityRequirement(name = "bearerAuth") },
         description = "Reverts the user's onboarding status to the immediate previous stage. " +
             "This is not allowed if the user is already at the first step or has already finished the process."
     )
@@ -90,7 +95,7 @@ public class OnboardingController {
         @ApiResponse(responseCode = "401", description = "Account not verified. Please check your email to proceed."),
         @ApiResponse(responseCode = "403", description = "Onboarding has already been completed. Status cannot be reverted.")
     })
-    @PostMapping("/step/back")
+    @PatchMapping("/back")
     public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
         return this.onboardingService.backToPreviousStep();
     }
