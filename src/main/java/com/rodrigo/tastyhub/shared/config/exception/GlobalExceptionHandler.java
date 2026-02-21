@@ -79,8 +79,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(OnboardingException.class)
-    public ResponseEntity<ErrorResponseDto> handleOnboardingException(OnboardingException ex) {
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponseDto> handleForbiddenException(ForbiddenException ex) {
         ErrorResponseDto error = new ErrorResponseDto(
             ex.getMessage(),
             HttpStatus.FORBIDDEN.value(),

@@ -9,7 +9,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
-import com.rodrigo.tastyhub.shared.exception.OnboardingException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import jakarta.transaction.Transactional;
@@ -110,7 +110,7 @@ public class OnboardingService {
         User user = securityService.getCurrentUser();
 
         if (user.isOnboardingFinished()) {
-            throw new OnboardingException("Onboarding has already been completed. Status cannot be reverted.");        }
+            throw new ForbiddenException("Onboarding has already been completed. Status cannot be reverted.");        }
 
         if (!user.isVerified()) {
             throw new UnauthorizedException("Account not verified. Please check your email to proceed.");
