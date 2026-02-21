@@ -133,6 +133,10 @@ public class User {
             && this.getOnBoardingStatus() != OnBoardingStatus.PENDING_VERIFICATION;
     }
 
+    public Boolean isOnboardingFinished() {
+        return this.getOnBoardingStatus() != OnBoardingStatus.COMPLETED;
+    }
+
     public void startOnboarding() {
         if (this.onBoardingStatus != OnBoardingStatus.PENDING_VERIFICATION) {
             throw new IllegalStateException("Cannot start onboarding from current state");
