@@ -90,7 +90,7 @@ public class OnboardingController {
         @ApiResponse(responseCode = "401", description = "Account not verified. Please check your email to proceed."),
         @ApiResponse(responseCode = "403", description = "Onboarding has already been completed. Status cannot be reverted.")
     })
-    @PostMapping("/back")
+    @PostMapping("/step/back")
     public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
         return this.onboardingService.backToPreviousStep();
     }
