@@ -6,7 +6,6 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
-import com.rodrigo.tastyhub.modules.auth.interfaces.rest.AuthController;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
 import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
 import org.apache.coyote.BadRequestException;
@@ -46,7 +45,7 @@ class AuthControllerTest {
     private AuthService authService;
 
     @Nested
-    @DisplayName("Tests for /auth/signup")
+    @DisplayName("Tests for /api/auth/signup")
     class SignupTests {
         @Test
         @DisplayName("Should return 201 when signup is successful")
@@ -64,7 +63,7 @@ class AuthControllerTest {
 
             when(authService.signup(any())).thenReturn(ResponseEntity.created(URI.create("/auth/signup")).body(response));
 
-            mockMvc.perform(post("/auth/signup")
+            mockMvc.perform(post("/api/auth/signup")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                 )
@@ -84,7 +83,7 @@ class AuthControllerTest {
 
             when(authService.signup(any())).thenThrow(new BadRequestException("This email is already in use!"));
 
-            mockMvc.perform(post("/auth/signup")
+            mockMvc.perform(post("/api/auth/signup")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                 )
@@ -94,7 +93,7 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("Tests for /auth/login")
+    @DisplayName("Tests for /api/auth/login")
     class LoginTests {
         @Test
         @DisplayName("Should return 200 and tokens when credentials are valid")
@@ -111,7 +110,7 @@ class AuthControllerTest {
 
             when(authService.login(any())).thenReturn(ResponseEntity.ok(response));
 
-            mockMvc.perform(post("/auth/login")
+            mockMvc.perform(post("/api/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -129,7 +128,7 @@ class AuthControllerTest {
             when(authService.login(any(LoginRequestDto.class)))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
 
-            mockMvc.perform(post("/auth/login")
+            mockMvc.perform(post("/api/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                 )
@@ -138,18 +137,59 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("Tests for GET /auth/refresh")
+    @DisplayName("Tests for /api/auth/logout")
+    class LogoutTests {
+
+        @Test
+        @DisplayName("Should return 204 when logout is successful")
+        void logoutSuccess() throws Exception {
+            String refreshToken = "valid-refresh-token";
+
+            when(authService.logOut(refreshToken)).thenReturn(ResponseEntity.noContent().build());
+
+            mockMvc.perform(post("/api/auth/logout")
+                    .header("X-Refresh-Token", refreshToken) // Header obrigatório
+                    .header("Authorization", "Bearer valid-access-token")) // Simula o SecurityRequirement
+                .andExpect(status().isNoContent());
+
+            verify(authService, times(1)).logOut(refreshToken);
+        }
+
+        @Test
+        @DisplayName("Should return 400 when refresh token is invalid")
+        void logoutWithInvalidToken() throws Exception {
+            String invalidToken = "invalid-token";
+
+            when(authService.logOut(invalidToken))
+                    .thenThrow(new BadRequestException("Invalid refresh token."));
+
+            mockMvc.perform(post("/api/auth/logout")
+                    .header("X-Refresh-Token", invalidToken))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should return 400 when X-Refresh-Token header is missing")
+        void logoutMissingHeader() throws Exception {
+            mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for GET /api/auth/refresh")
     class RefreshTokenTests {
         @Test
         @DisplayName("Should return 200 when refresh token is valid")
         void refreshTokenSuccess() throws Exception {
-            String token = "valid-refresh-token";
+            String refreshToken = "valid-refresh-token";
             LoginResponseDto response = new LoginResponseDto("new-access", "new-refresh", "Bearer ");
 
-            when(authService.refreshToken(token)).thenReturn(ResponseEntity.ok(response));
+            when(authService.refreshToken(refreshToken)).thenReturn(ResponseEntity.ok(response));
 
-            mockMvc.perform(get("/auth/refresh")
-                    .param("token", token))
+            mockMvc.perform(post("/api/auth/refresh")
+                    .header("X-Refresh-Token", refreshToken)
+                    .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new-access"))
                 .andExpect(jsonPath("$.refreshToken").value("new-refresh"));
@@ -158,20 +198,19 @@ class AuthControllerTest {
         @Test
         @DisplayName("Should return 400 when token is invalid or expired")
         void refreshTokenFail() throws Exception {
-            String token = "invalid-token";
+            String refreshToken = "invalid-token";
 
-            when(authService.refreshToken(token))
+            when(authService.refreshToken(refreshToken))
                 .thenThrow(new InvalidTokenException("Invalid refresh token."));
 
-            mockMvc.perform(get("/auth/refresh")
-                    .param("token", token)
-                )
+            mockMvc.perform(post("/api/auth/refresh")
+                    .header("X-Refresh-Token", refreshToken))
                 .andExpect(status().isBadRequest());
         }
     }
 
     @Nested
-    @DisplayName("Tests for GET /auth/verify-email")
+    @DisplayName("Tests for GET /api/auth/verify-email")
     class VerifyEmailTests {
 
         @Test
@@ -182,8 +221,9 @@ class AuthControllerTest {
 
             when(authService.verifyEmail(token)).thenReturn(ResponseEntity.ok(response));
 
-            mockMvc.perform(get("/auth/verify-email")
-                    .param("token", token)
+            mockMvc.perform(
+                    get("/api/auth/verify-email/{token}", token)
+                        .contentType(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("access"));
@@ -197,8 +237,7 @@ class AuthControllerTest {
             when(authService.verifyEmail(token))
                 .thenThrow(new ExpiredTokenException("This verification link has expired."));
 
-            mockMvc.perform(get("/auth/verify-email")
-                    .param("token", token))
+            mockMvc.perform(get("/api/auth/verify-email/{token}", token))
                 .andExpect(status().isUnauthorized());
         }
     }

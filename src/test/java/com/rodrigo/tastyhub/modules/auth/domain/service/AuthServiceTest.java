@@ -9,6 +9,7 @@ import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.InfrastructureException;
 import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
@@ -134,13 +135,13 @@ class AuthServiceTest {
             assertNotNull(response);
             assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-            assertTrue(response.getHeaders().getLocation().toString().contains("/auth/signup"));
+            assertTrue(response.getHeaders().getLocation().toString().contains("/api/auth/signup"));
 
             SignupResponseDto body = response.getBody();
             assertNotNull(body);
             assertEquals(signupDto.email(), body.emailSentTo());
 
-            assertTrue(body.message().contains("Verify your account!"));
+            assertTrue(body.message().contains("verify your account."));
 
             verify(userRepository, times(1)).save(any(User.class));
         }
@@ -199,11 +200,11 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw BadCredential when User is not validated")
-        void shouldThrowBadCredentialExceptionWhenUserStatusIsPending() {
+        @DisplayName("Should throw ForbiddenException when User is not validated")
+        void shouldThrowForbiddenExceptionWhenUserStatusIsPending() {
             LoginRequestDto loginDto = new LoginRequestDto(
-                    "wrong@email.com",
-                    "wrongpass"
+                "wrong@email.com",
+                "wrongpass"
             );
 
             User user = new User();
@@ -221,7 +222,7 @@ class AuthServiceTest {
             when(userRepository.findByEmail(loginDto.email()))
                     .thenReturn(Optional.of(user));
 
-            assertThrows(BadCredentialsException.class, () -> {
+            assertThrows(ForbiddenException.class, () -> {
                 authService.login(loginDto);
             });
 
@@ -259,6 +260,49 @@ class AuthServiceTest {
             assertEquals("mocked-jwt-token", response.getBody().accessToken());
 
             assertEquals(authentication, SecurityContextHolder.getContext().getAuthentication());
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for Log Out method")
+    class LogOutTests {
+
+        @Mock
+        private RefreshTokenRepository refreshTokenRepository;
+
+        @InjectMocks
+        private AuthService authService;
+
+        @Test
+        @DisplayName("Should successfully delete refresh token when it exists")
+        void shouldLogOutSuccessfully() throws BadRequestException {
+            String refreshToken = "valid-token-123";
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setToken(refreshToken);
+
+            when(refreshTokenRepository.findByToken(refreshToken))
+                    .thenReturn(Optional.of(tokenEntity));
+
+            ResponseEntity<Void> response = authService.logOut(refreshToken);
+
+            assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+            verify(refreshTokenRepository, times(1)).delete(tokenEntity);
+            verify(refreshTokenRepository, times(1)).findByToken(refreshToken);
+        }
+
+        @Test
+        @DisplayName("Should throw BadRequestException when token is not found")
+        void shouldThrowExceptionWhenTokenNotFound() {
+            String refreshToken = "non-existent-token";
+            when(refreshTokenRepository.findByToken(refreshToken))
+                .thenReturn(Optional.empty());
+
+            BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+                authService.logOut(refreshToken);
+            });
+
+            assertEquals("Refresh token is missing or invalid", exception.getMessage());
+            verify(refreshTokenRepository, never()).delete(any());
         }
     }
 

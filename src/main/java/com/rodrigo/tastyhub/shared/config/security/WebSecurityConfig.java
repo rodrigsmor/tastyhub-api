@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.auth.infrastructure.CustomUserDetailsService
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -38,19 +39,20 @@ public class WebSecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(authEntryPoint))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/api-docs/**",
                     "/swagger-ui.html",
                     "/hello-world",
-                    "/auth/login",
-                    "/auth/signup",
-                    "/auth/refresh-token",
-                    "/auth/verify-email"
+                    "/api/auth/login",
+                    "/api/auth/signup",
+                    "/api/auth/refresh-token",
+                    "/api/auth/verify-email"
                 ).permitAll()
-                .requestMatchers("/auth/user/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/auth/admin/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/auth/user/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN")
                 .anyRequest().authenticated()
             ).httpBasic(Customizer.withDefaults());
 
