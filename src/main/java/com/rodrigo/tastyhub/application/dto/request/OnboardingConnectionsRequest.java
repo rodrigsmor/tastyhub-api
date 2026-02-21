@@ -12,4 +12,8 @@ public record OnboardingConnectionsRequest(
         example = "[102, 455, 890]"
     )
     Set<Long> userIds
-) {}
+) {
+    public boolean hasUserIds() {
+        return userIds != null && !userIds.isEmpty();
+    }
+}

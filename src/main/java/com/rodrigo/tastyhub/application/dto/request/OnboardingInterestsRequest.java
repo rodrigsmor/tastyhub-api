@@ -27,4 +27,16 @@ public record OnboardingInterestsRequest(
         requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
     Set<Long> unfollowTagIds
-) {}
+) {
+    public boolean hasTagIds() {
+        return tagIds != null && !tagIds.isEmpty();
+    }
+
+    public boolean hasNewTags() {
+        return newTags != null && !newTags.isEmpty();
+    }
+
+    public boolean hasUnfollowTagIds() {
+        return unfollowTagIds != null && !unfollowTagIds.isEmpty();
+    }
+}
