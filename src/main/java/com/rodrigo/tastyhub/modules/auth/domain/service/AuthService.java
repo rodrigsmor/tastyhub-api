@@ -8,9 +8,7 @@ import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepositor
 import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
-import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
-import com.rodrigo.tastyhub.shared.exception.InfrastructureException;
-import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
+import com.rodrigo.tastyhub.shared.exception.*;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
 import com.rodrigo.tastyhub.modules.auth.domain.model.RefreshToken;
 import com.rodrigo.tastyhub.modules.auth.domain.model.VerificationToken;
@@ -62,6 +60,7 @@ public class AuthService {
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
 
+    @Transactional
     public ResponseEntity<SignupResponseDto> signup(SignupRequestDto signupDto) throws BadRequestException {
         if (userRepository.existsByUsername(signupDto.email())) {
             throw new BadRequestException("This email is already in use!");
@@ -94,12 +93,13 @@ public class AuthService {
 
         return ResponseEntity.created(uri).body(
             new SignupResponseDto(
-                "Verify your account! (temporary) verification code: " + verificationToken,
+                "Account successfully created! Please, verify your account. (temporary) verification code: " + verificationToken,
                 user.getEmail()
             )
         );
     }
 
+    @Transactional
     public ResponseEntity<LoginResponseDto> login(LoginRequestDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.password())
@@ -109,7 +109,7 @@ public class AuthService {
             .orElseThrow(() -> new BadCredentialsException("User record not found"));
 
         if (!user.isVerified()) {
-            throw new BadCredentialsException("Please verify your email before logging in");
+            throw new ForbiddenException("Please verify your email before logging in");
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -121,6 +121,16 @@ public class AuthService {
             refreshToken,
             user.getOnBoardingStatus().name()
         ));
+    }
+
+    @Transactional
+    public ResponseEntity<Void> logOut(String refreshToken) throws BadRequestException {
+        RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
+            .orElseThrow(() -> new BadRequestException("Refresh token is missing or invalid"));
+
+        refreshTokenRepository.delete(tokenEntity);
+
+        return ResponseEntity.noContent().build();
     }
 
     @Transactional
