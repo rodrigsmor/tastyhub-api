@@ -1,0 +1,11 @@
+package com.rodrigo.tastyhub.modules.social.domain.model;
+
+import jakarta.persistence.Embeddable;
+
+import java.io.Serializable;
+
+@Embeddable
+public record FollowId(
+    Long followerId,
+    Long followingId
+) implements Serializable {}
