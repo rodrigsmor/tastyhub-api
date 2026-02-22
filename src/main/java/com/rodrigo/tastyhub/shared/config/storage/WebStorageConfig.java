@@ -12,7 +12,6 @@ public class WebStorageConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Expondo a pasta externa via URL /uploads/**
         registry.addResourceHandler("/uploads/**")
             .addResourceLocations("file:" + uploadDir + "/");
     }
