@@ -49,7 +49,7 @@ public class WebSecurityConfig {
                     "/api/auth/login",
                     "/api/auth/signup",
                     "/api/auth/refresh-token",
-                    "/api/auth/verify-email"
+                    "/api/auth/verify-email/**"
                 ).permitAll()
                 .requestMatchers("/api/auth/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN")
