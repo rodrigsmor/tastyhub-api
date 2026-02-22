@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
+import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
@@ -12,12 +13,14 @@ import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.kernel.annotations.FileRollback;
 import jakarta.transaction.Transactional;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -35,19 +38,26 @@ public class OnboardingService {
     @Autowired
     private TagRepository tagRepository;
 
+    @Autowired
+    private ImageStorageService imageStorageService;
+
     @Transactional
-    public ResponseEntity<Void> updateUserProfile(OnboardingIdentityRequest request) {
+    @FileRollback
+    public ResponseEntity<Void> updateUserProfile(OnboardingIdentityRequest request, MultipartFile file) {
         User user = securityService.getCurrentUser();
 
         if (userRepository.existsByUsernameAndIdNot(request.username(), user.getId())) {
             throw new BadCredentialsException("Invalid input or username already taken");
         }
 
+        if (file != null && !file.isEmpty()) {
+            String fileName = imageStorageService.storeImage(file);
+            user.setProfilePictureUrl(fileName);
+            user.setProfilePictureAlt(request.profilePictureAlt());
+        }
+
         user.setBio(request.bio());
         user.setUsername(request.username());
-        user.setProfilePictureAlt(request.profilePictureAlt());
-        user.setProfilePictureUrl(request.profilePictureUrl());
-
         user.setOnBoardingStatus(OnBoardingStatus.STEP_2);
 
         userRepository.save(user);

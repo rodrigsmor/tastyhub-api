@@ -27,13 +27,6 @@ public record OnboardingIdentityRequest(
     String bio,
 
     @Schema(
-        description = "Public URL of the profile image",
-        example = "https://cdn.example.com/profiles/johndoe.jpg",
-        requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    String profilePictureUrl,
-
-    @Schema(
         description = "Alternative text for the profile image (accessibility)",
         example = "John Doe smiling in a kitchen setting",
         requiredMode = Schema.RequiredMode.NOT_REQUIRED

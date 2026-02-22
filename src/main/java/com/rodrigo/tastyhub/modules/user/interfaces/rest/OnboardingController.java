@@ -7,14 +7,17 @@ import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingSt
 import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(
     name = "Onboarding",
@@ -39,12 +42,19 @@ public class OnboardingController {
         @ApiResponse(responseCode = "400", description = "Invalid input or username already taken"),
         @ApiResponse(responseCode = "403", description = "Access denied: User is not in STEP_1")
     })
-    @PatchMapping("/profile")
+    @PatchMapping(
+        value = "/profile",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @RequiresOnboardingStep(OnBoardingStatus.STEP_1)
     public ResponseEntity<Void> updateBasicProfileInformation(
-        @Valid @RequestBody OnboardingIdentityRequest request
+        @Parameter(description = "Profile data in JSON format")
+        @Valid @ModelAttribute OnboardingIdentityRequest request,
+
+        @Parameter(description = "Profile picture file")
+        @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        return this.onboardingService.updateUserProfile(request);
+        return this.onboardingService.updateUserProfile(request, file);
     }
 
     @Operation(
