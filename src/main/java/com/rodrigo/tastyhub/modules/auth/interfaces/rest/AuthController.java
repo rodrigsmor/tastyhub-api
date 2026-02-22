@@ -64,7 +64,7 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Invalid refresh token."),
         @ApiResponse(responseCode = "401", description = "Refresh token expired or revoked. Please log in again."),
     })
-    @PostMapping("/refresh")
+    @PostMapping("/refresh-token")
     public ResponseEntity<LoginResponseDto> refreshToken(
         @RequestHeader(name = "X-Refresh-Token", required = true) String refreshToken
     ) {
