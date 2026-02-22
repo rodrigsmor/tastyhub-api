@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.shared.config.storage;
 
+import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import com.rodrigo.tastyhub.shared.infrastructure.aspect.FileRollbackContext;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileRollback;
 import jakarta.transaction.Transactional;
@@ -35,16 +36,32 @@ public class ImageStorageService {
                 Files.createDirectories(uploadPath);
             }
 
-            String fileName = UUID.randomUUID().toString() + "_" + System.currentTimeMillis();
+            String originalName = file.getOriginalFilename();
+            String extension = "";
+
+            if (originalName.contains(".")) {
+                extension = originalName.substring(originalName.lastIndexOf("."));
+            }
+
+            String fileName = UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + extension;
             Path filePath = uploadPath.resolve(fileName);
 
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            rollbackContext.setFilePath(filePath);
+            rollbackContext.setForRollback(filePath);
 
             return fileName;
         } catch (IOException e) {
             throw new RuntimeException("Could not store image. Error: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    @FileCleanup
+    public void deleteImage(String fileName) {
+        Path filePath = Paths.get(uploadDir).resolve(fileName).toAbsolutePath();
+
+        if (Files.exists(filePath)) {
+            rollbackContext.setForCleanup(filePath);
         }
     }
 }
