@@ -6,17 +6,17 @@ import java.nio.file.Path;
 
 @Component
 public class FileRollbackContext {
-    private static final ThreadLocal<Path> filePathThreadLocal = new ThreadLocal<>();
+    private final ThreadLocal<Path> fileToRollback = new ThreadLocal<>();
+    private final ThreadLocal<Path> fileToCleanup = new ThreadLocal<>();
 
-    public void setFilePath(Path filePath) {
-        filePathThreadLocal.set(filePath);
-    }
+    public void setForRollback(Path path) { fileToRollback.set(path); }
+    public void setForCleanup(Path path) { fileToCleanup.set(path); }
 
-    public Path getFilePath() {
-        return filePathThreadLocal.get();
-    }
+    public Path getForRollback() { return fileToRollback.get(); }
+    public Path getForCleanup() { return fileToCleanup.get(); }
 
     public void clear() {
-        filePathThreadLocal.remove();
+        fileToRollback.remove();
+        fileToCleanup.remove();
     }
 }

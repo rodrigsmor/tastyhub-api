@@ -24,27 +24,25 @@ public class FileRollbackAspect {
     @Around("@annotation(com.rodrigo.tastyhub.shared.kernel.annotations.FileRollback)")
     public Object manageFileRollback(ProceedingJoinPoint joinPoint) throws Throwable {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
-            return joinPoint.proceed(); // Se não tem transação, segue vida normal
+            return joinPoint.proceed();
         }
 
-        // 2. Registra o sincronismo
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCompletion(int status) {
-                Path path = context.getFilePath();
-                if (status != TransactionSynchronization.STATUS_COMMITTED && path != null) {
-                    try {
-                        Files.deleteIfExists(path);
-                        System.out.println("DEBUG: Arquivo deletado com sucesso no Rollback: " + path);
-                    } catch (IOException e) {
-                        System.err.println("DEBUG: Falha ao deletar arquivo: " + e.getMessage());
-                    }
+            Path path = context.getForRollback();
+            if (status != TransactionSynchronization.STATUS_COMMITTED && path != null) {
+                try {
+                    Files.deleteIfExists(path);
+                    System.out.println("DEBUG: File deleted successfully: " + path);
+                } catch (IOException e) {
+                    System.err.println("DEBUG: Failed to delete file: " + e.getMessage());
                 }
-                context.clear();
+            }
+            context.clear();
             }
         });
 
-        // 3. Executa o método (storeImage)
         return joinPoint.proceed();
     }
 }
