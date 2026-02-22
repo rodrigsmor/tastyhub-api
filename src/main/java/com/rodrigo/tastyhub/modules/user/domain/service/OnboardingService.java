@@ -13,6 +13,7 @@ import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileRollback;
 import jakarta.transaction.Transactional;
 import org.apache.coyote.BadRequestException;
@@ -26,6 +27,9 @@ import java.util.*;
 
 @Service
 public class OnboardingService {
+    @Autowired
+    private UserService userService;
+
     @Autowired
     private UserRepository userRepository;
 
@@ -43,6 +47,7 @@ public class OnboardingService {
 
     @Transactional
     @FileRollback
+    @FileCleanup
     public ResponseEntity<Void> updateUserProfile(OnboardingIdentityRequest request, MultipartFile file) {
         User user = securityService.getCurrentUser();
 
@@ -51,9 +56,7 @@ public class OnboardingService {
         }
 
         if (file != null && !file.isEmpty()) {
-            String fileName = imageStorageService.storeImage(file);
-            user.setProfilePictureUrl(fileName);
-            user.setProfilePictureAlt(request.profilePictureAlt());
+            userService.updateProfilePicture(file, request.profilePictureAlt());
         }
 
         user.setBio(request.bio());
