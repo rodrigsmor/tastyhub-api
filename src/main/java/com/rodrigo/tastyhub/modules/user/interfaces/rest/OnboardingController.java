@@ -3,11 +3,14 @@ package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -108,5 +111,26 @@ public class OnboardingController {
     @PatchMapping("/back")
     public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
         return this.onboardingService.backToPreviousStep();
+    }
+
+    @Operation(
+        summary = "Get current onboarding step",
+        description = "Retrieves the current onboarding status for the authenticated user. " +
+                "This helps the frontend determine which screen to display next.",
+        security = { @SecurityRequirement(name = "bearerAuth") }
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            content = @Content(schema = @Schema(implementation = UserOnboardingStep.class)),
+            description = "Current step retrieved successfully"
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - User must be logged in"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/step")
+    public ResponseEntity<UserOnboardingStep> getCurrentStep() {
+        UserOnboardingStep response = this.onboardingService.getCurrentStep();
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserOnboardingStep;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
@@ -144,6 +145,12 @@ public class OnboardingService {
         userRepository.save(user);
 
         return ResponseEntity.noContent().build();
+    }
+
+    public UserOnboardingStep getCurrentStep() {
+        User user = securityService.getCurrentUser();
+
+        return new UserOnboardingStep(user.getOnBoardingStatus());
     }
 
     private ResponseEntity<Void> completeStepAndResponse(User user) {
