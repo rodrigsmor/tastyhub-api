@@ -37,6 +37,7 @@ public class Article {
     @Column(name = "cover_alt", length = 500)
     private String coverAlt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
