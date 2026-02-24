@@ -119,7 +119,7 @@ public class AuthService {
         return ResponseEntity.ok(new LoginResponseDto(
             accessToken,
             refreshToken,
-            user.getOnBoardingStatus().name()
+            user.getOnboardingStatus().name()
         ));
     }
 
