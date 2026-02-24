@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -27,7 +26,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.*;
@@ -123,7 +121,6 @@ class OnboardingControllerTest {
         @Test
         @DisplayName("1. Should select interests successfully and return 200 OK")
         void shouldSelectInterestsSuccessfully() throws Exception {
-            // GIVEN
             var request = new OnboardingInterestsRequest(Set.of(1L, 2L), Set.of("vegan"), null);
             var expectedResponse = new OnboardingProgressDto(
                 OnBoardingStatus.STEP_3,
