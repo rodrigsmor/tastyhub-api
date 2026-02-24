@@ -1,6 +1,5 @@
 package com.rodrigo.tastyhub.modules.user.domain.model;
 
-import com.rodrigo.tastyhub.modules.user.domain.model.UserRole;
 import jakarta.persistence.*;
 
 @Entity
