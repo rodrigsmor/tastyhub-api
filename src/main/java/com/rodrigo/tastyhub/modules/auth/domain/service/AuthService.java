@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
+import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
 import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
@@ -80,6 +81,11 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(signupDto.password()));
         user.setStatus(UserStatus.PENDING);
+
+        UserSettings settings = new UserSettings();;
+
+        settings.setUser(user);
+        user.setSettings(settings);
 
         userRepository.save(user);
 
