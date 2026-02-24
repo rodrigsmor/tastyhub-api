@@ -160,7 +160,6 @@ public class OnboardingService {
 
     private ResponseEntity<OnboardingProgressDto> completeStepAndResponse(User user) {
         user.setOnBoardingStatus(OnBoardingStatus.STEP_3);
-        userRepository.save(user);
 
         return ResponseEntity.ok(
                 this.getOnboardingProgressResponse(userRepository.save(user)
@@ -170,7 +169,6 @@ public class OnboardingService {
 
     private ResponseEntity<OnboardingProgressDto> finalizeOnboarding(User user) {
         user.completeOnboarding();
-        userRepository.save(user);
 
         return ResponseEntity.ok(
                 this.getOnboardingProgressResponse(userRepository.save(user)
