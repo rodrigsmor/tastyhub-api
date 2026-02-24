@@ -1,8 +1,8 @@
 package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
+import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
@@ -52,7 +52,7 @@ public class OnboardingController {
     @RequiresOnboardingStep(OnboardingStatus.STEP_1)
     public ResponseEntity<OnboardingProgressDto> updateBasicProfileInformation(
         @Parameter(description = "Profile data in JSON format")
-        @Valid @ModelAttribute OnboardingIdentityRequest request,
+        @Valid @ModelAttribute OnboardingProfileRequest request,
 
         @Parameter(description = "Profile picture file")
         @RequestPart(value = "file", required = false) MultipartFile file

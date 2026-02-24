@@ -4,7 +4,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
+import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
@@ -30,7 +30,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -89,7 +89,12 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should update profile picture and user data when a file is provided")
         void shouldUpdateProfileWithFile() {
-            OnboardingIdentityRequest request = new OnboardingIdentityRequest("new.username", "New bio", "Alt text");
+            OnboardingProfileRequest request = new OnboardingProfileRequest(
+                "new.username",
+                "New bio",
+                "Alt text",
+                LocalDate.parse("1995-08-25")
+            );
             MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
@@ -110,7 +115,12 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should throw error if username is already taken")
         void shouldThrowErrorIfUsernameTaken() {
-            OnboardingIdentityRequest request = new OnboardingIdentityRequest("taken.user", "bio", null);
+            OnboardingProfileRequest request = new OnboardingProfileRequest(
+                "taken.user",
+                "bio",
+                null,
+                LocalDate.parse("1995-08-25")
+            );
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
             when(userRepository.existsByUsernameAndIdNot("taken.user", 1L)).thenReturn(true);
 
@@ -124,7 +134,12 @@ class OnboardingServiceTest {
         @DisplayName("Should return error if username exceeds 20 characters")
         void shouldReturnErrorIfUsernameExceedsLimit() {
             String longUsername = "username_muito_longo_mesmo";
-            OnboardingIdentityRequest request = new OnboardingIdentityRequest(longUsername, "bio", null);
+            OnboardingProfileRequest request = new OnboardingProfileRequest(
+                longUsername,
+                "bio",
+                null,
+                LocalDate.parse("1995-08-25")
+            );
 
             lenient().when(securityService.getCurrentUser()).thenReturn(fakeUser);
             lenient().when(userRepository.existsByUsernameAndIdNot(anyString(), anyLong())).thenReturn(false);

@@ -1,9 +1,9 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
+import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
@@ -49,7 +49,7 @@ public class OnboardingService {
     @Transactional
     @FileRollback
     @FileCleanup
-    public ResponseEntity<OnboardingProgressDto> updateUserProfile(OnboardingIdentityRequest request, MultipartFile file) {
+    public ResponseEntity<OnboardingProgressDto> updateUserProfile(OnboardingProfileRequest request, MultipartFile file) {
         User user = securityService.getCurrentUser();
 
         if (userRepository.existsByUsernameAndIdNot(request.username(), user.getId())) {
@@ -62,6 +62,7 @@ public class OnboardingService {
 
         user.setBio(request.bio());
         user.setUsername(request.username());
+        user.setDateOfBirth(request.dateOfBirth());
         user.setOnboardingStatus(OnboardingStatus.STEP_2);
 
         return ResponseEntity.ok(this.getOnboardingProgressResponse(userRepository.save(user)));
