@@ -29,4 +29,9 @@ public class Tag {
     @Builder.Default
     @ManyToMany(mappedBy = "followedTags")
     private Set<User> followers = new HashSet<>();
+
+    public Tag(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 }

@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
+import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
@@ -48,7 +49,7 @@ public class OnboardingService {
     @Transactional
     @FileRollback
     @FileCleanup
-    public ResponseEntity<Void> updateUserProfile(OnboardingIdentityRequest request, MultipartFile file) {
+    public ResponseEntity<OnboardingProgressDto> updateUserProfile(OnboardingIdentityRequest request, MultipartFile file) {
         User user = securityService.getCurrentUser();
 
         if (userRepository.existsByUsernameAndIdNot(request.username(), user.getId())) {
@@ -63,13 +64,11 @@ public class OnboardingService {
         user.setUsername(request.username());
         user.setOnBoardingStatus(OnBoardingStatus.STEP_2);
 
-        userRepository.save(user);
-
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(this.getOnboardingProgressResponse(userRepository.save(user)));
     }
 
     @Transactional
-    public ResponseEntity<Void> selectInterests(
+    public ResponseEntity<OnboardingProgressDto> selectInterests(
         OnboardingInterestsRequest request,
         boolean shouldSkip
     ) {
@@ -98,7 +97,7 @@ public class OnboardingService {
     }
 
     @Transactional
-    public ResponseEntity<Void> followInitialUsers(OnboardingConnectionsRequest request, boolean shouldSkip) {
+    public ResponseEntity<OnboardingProgressDto> followInitialUsers(OnboardingConnectionsRequest request, boolean shouldSkip) {
         User currentUser = securityService.getCurrentUser();
 
         if (shouldSkip) {
@@ -119,7 +118,7 @@ public class OnboardingService {
     }
 
     @Transactional
-    public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
+    public ResponseEntity<OnboardingProgressDto> backToPreviousStep() throws BadRequestException {
         User user = securityService.getCurrentUser();
 
         if (user.isOnboardingFinished()) {
@@ -141,20 +140,47 @@ public class OnboardingService {
 
         user.setOnBoardingStatus(previousStep);
 
-        userRepository.save(user);
-
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(
+                this.getOnboardingProgressResponse(userRepository.save(user)
+            )
+        );
     }
 
-    private ResponseEntity<Void> completeStepAndResponse(User user) {
+    public OnboardingProgressDto getCurrentStep() {
+        User user = securityService.getCurrentUser();
+
+        OnBoardingStatus status = user.getOnBoardingStatus();
+
+        return new OnboardingProgressDto(
+            status,
+            status.getNext(),
+            user.isOnboardingFinished()
+        );
+    }
+
+    private ResponseEntity<OnboardingProgressDto> completeStepAndResponse(User user) {
         user.setOnBoardingStatus(OnBoardingStatus.STEP_3);
-        userRepository.save(user);
-        return ResponseEntity.noContent().build();
+
+        return ResponseEntity.ok(
+                this.getOnboardingProgressResponse(userRepository.save(user)
+            )
+        );
     }
 
-    private ResponseEntity<Void> finalizeOnboarding(User user) {
+    private ResponseEntity<OnboardingProgressDto> finalizeOnboarding(User user) {
         user.completeOnboarding();
-        userRepository.save(user);
-        return ResponseEntity.noContent().build();
+
+        return ResponseEntity.ok(
+                this.getOnboardingProgressResponse(userRepository.save(user)
+            )
+        );
+    }
+
+    private OnboardingProgressDto getOnboardingProgressResponse(User user) {
+        return new OnboardingProgressDto(
+            user.getOnBoardingStatus(),
+            user.getOnBoardingStatus().getNext(),
+            user.isOnboardingFinished()
+        );
     }
 }

@@ -3,11 +3,14 @@ package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -47,7 +50,7 @@ public class OnboardingController {
         consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     @RequiresOnboardingStep(OnBoardingStatus.STEP_1)
-    public ResponseEntity<Void> updateBasicProfileInformation(
+    public ResponseEntity<OnboardingProgressDto> updateBasicProfileInformation(
         @Parameter(description = "Profile data in JSON format")
         @Valid @ModelAttribute OnboardingIdentityRequest request,
 
@@ -68,7 +71,7 @@ public class OnboardingController {
     })
     @PostMapping("/interests")
     @RequiresOnboardingStep(OnBoardingStatus.STEP_2)
-    public ResponseEntity<Void> selectInterests(
+    public ResponseEntity<OnboardingProgressDto> selectInterests(
         @Valid @RequestBody OnboardingInterestsRequest request,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
@@ -86,7 +89,7 @@ public class OnboardingController {
     })
     @PostMapping("/connections")
     @RequiresOnboardingStep(OnBoardingStatus.STEP_3)
-    public ResponseEntity<Void> establishConnections(
+    public ResponseEntity<OnboardingProgressDto> establishConnections(
         @RequestBody OnboardingConnectionsRequest connections,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
@@ -106,7 +109,28 @@ public class OnboardingController {
         @ApiResponse(responseCode = "403", description = "Onboarding has already been completed. Status cannot be reverted.")
     })
     @PatchMapping("/back")
-    public ResponseEntity<Void> backToPreviousStep() throws BadRequestException {
+    public ResponseEntity<OnboardingProgressDto> backToPreviousStep() throws BadRequestException {
         return this.onboardingService.backToPreviousStep();
+    }
+
+    @Operation(
+        summary = "Get current onboarding step",
+        description = "Retrieves the current onboarding status for the authenticated user. " +
+                "This helps the frontend determine which screen to display next.",
+        security = { @SecurityRequirement(name = "bearerAuth") }
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            content = @Content(schema = @Schema(implementation = OnboardingProgressDto.class)),
+            description = "Current step retrieved successfully"
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - User must be logged in"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/step")
+    public ResponseEntity<OnboardingProgressDto> getCurrentStep() {
+        OnboardingProgressDto response = this.onboardingService.getCurrentStep();
+        return ResponseEntity.ok(response);
     }
 }

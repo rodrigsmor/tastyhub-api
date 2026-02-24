@@ -177,7 +177,7 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("Tests for GET /api/auth/refresh")
+    @DisplayName("Tests for GET /api/auth/refresh-token")
     class RefreshTokenTests {
         @Test
         @DisplayName("Should return 200 when refresh token is valid")
@@ -187,7 +187,7 @@ class AuthControllerTest {
 
             when(authService.refreshToken(refreshToken)).thenReturn(ResponseEntity.ok(response));
 
-            mockMvc.perform(post("/api/auth/refresh")
+            mockMvc.perform(post("/api/auth/refresh-token")
                     .header("X-Refresh-Token", refreshToken)
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -203,7 +203,7 @@ class AuthControllerTest {
             when(authService.refreshToken(refreshToken))
                 .thenThrow(new InvalidTokenException("Invalid refresh token."));
 
-            mockMvc.perform(post("/api/auth/refresh")
+            mockMvc.perform(post("/api/auth/refresh-token")
                     .header("X-Refresh-Token", refreshToken))
                 .andExpect(status().isBadRequest());
         }

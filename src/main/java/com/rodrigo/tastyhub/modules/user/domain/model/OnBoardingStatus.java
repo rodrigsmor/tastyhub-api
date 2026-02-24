@@ -20,4 +20,15 @@ public enum OnBoardingStatus {
     public boolean isInProgress() {
         return this != PENDING_VERIFICATION && this != COMPLETED;
     }
+
+    public OnBoardingStatus getNext() {
+        int nextIndex = this.ordinal() + 1;
+        OnBoardingStatus[] values = OnBoardingStatus.values();
+
+        if (nextIndex >= values.length) {
+            return this;
+        }
+
+        return values[nextIndex];
+    }
 }
