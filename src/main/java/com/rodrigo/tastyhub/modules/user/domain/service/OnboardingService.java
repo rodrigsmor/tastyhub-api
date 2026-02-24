@@ -6,7 +6,7 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConne
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
-import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
+import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
@@ -62,7 +62,7 @@ public class OnboardingService {
 
         user.setBio(request.bio());
         user.setUsername(request.username());
-        user.setOnBoardingStatus(OnBoardingStatus.STEP_2);
+        user.setOnboardingStatus(OnboardingStatus.STEP_2);
 
         return ResponseEntity.ok(this.getOnboardingProgressResponse(userRepository.save(user)));
     }
@@ -128,17 +128,17 @@ public class OnboardingService {
             throw new UnauthorizedException("Account not verified. Please check your email to proceed.");
         }
 
-        OnBoardingStatus currentStatus = user.getOnBoardingStatus();
+        OnboardingStatus currentStatus = user.getOnboardingStatus();
 
-        if (currentStatus == OnBoardingStatus.STEP_1) {
+        if (currentStatus == OnboardingStatus.STEP_1) {
             throw new BadRequestException("Cannot go back: User is already at the initial onboarding step.");
         }
 
-        OnBoardingStatus previousStep = (currentStatus == OnBoardingStatus.STEP_3)
-            ? OnBoardingStatus.STEP_2
-            : OnBoardingStatus.STEP_1;
+        OnboardingStatus previousStep = (currentStatus == OnboardingStatus.STEP_3)
+            ? OnboardingStatus.STEP_2
+            : OnboardingStatus.STEP_1;
 
-        user.setOnBoardingStatus(previousStep);
+        user.setOnboardingStatus(previousStep);
 
         return ResponseEntity.ok(
                 this.getOnboardingProgressResponse(userRepository.save(user)
@@ -149,7 +149,7 @@ public class OnboardingService {
     public OnboardingProgressDto getCurrentStep() {
         User user = securityService.getCurrentUser();
 
-        OnBoardingStatus status = user.getOnBoardingStatus();
+        OnboardingStatus status = user.getOnboardingStatus();
 
         return new OnboardingProgressDto(
             status,
@@ -159,7 +159,7 @@ public class OnboardingService {
     }
 
     private ResponseEntity<OnboardingProgressDto> completeStepAndResponse(User user) {
-        user.setOnBoardingStatus(OnBoardingStatus.STEP_3);
+        user.setOnboardingStatus(OnboardingStatus.STEP_3);
 
         return ResponseEntity.ok(
                 this.getOnboardingProgressResponse(userRepository.save(user)
@@ -178,8 +178,8 @@ public class OnboardingService {
 
     private OnboardingProgressDto getOnboardingProgressResponse(User user) {
         return new OnboardingProgressDto(
-            user.getOnBoardingStatus(),
-            user.getOnBoardingStatus().getNext(),
+            user.getOnboardingStatus(),
+            user.getOnboardingStatus().getNext(),
             user.isOnboardingFinished()
         );
     }

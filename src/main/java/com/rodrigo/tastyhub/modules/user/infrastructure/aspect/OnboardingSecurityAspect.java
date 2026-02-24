@@ -1,7 +1,7 @@
 package com.rodrigo.tastyhub.modules.user.infrastructure.aspect;
 
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
-import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
+import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
@@ -22,11 +22,11 @@ public class OnboardingSecurityAspect {
 
         var requiredStatus = onboardingAnnotation.value();
 
-        if (user.getOnBoardingStatus() == OnBoardingStatus.COMPLETED) {
+        if (user.getOnboardingStatus() == OnboardingStatus.COMPLETED) {
             throw new ForbiddenException("Onboarding already completed.");
         }
 
-        if (user.getOnBoardingStatus() != requiredStatus) {
+        if (user.getOnboardingStatus() != requiredStatus) {
             throw new ForbiddenException(
                 "Access denied: User is not in " + requiredStatus
             );

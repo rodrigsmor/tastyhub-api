@@ -5,7 +5,7 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdent
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
-import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
+import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,7 +49,7 @@ public class OnboardingController {
         value = "/profile",
         consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    @RequiresOnboardingStep(OnBoardingStatus.STEP_1)
+    @RequiresOnboardingStep(OnboardingStatus.STEP_1)
     public ResponseEntity<OnboardingProgressDto> updateBasicProfileInformation(
         @Parameter(description = "Profile data in JSON format")
         @Valid @ModelAttribute OnboardingIdentityRequest request,
@@ -70,7 +70,7 @@ public class OnboardingController {
         @ApiResponse(responseCode = "403", description = "Access denied: User is not in STEP_2")
     })
     @PostMapping("/interests")
-    @RequiresOnboardingStep(OnBoardingStatus.STEP_2)
+    @RequiresOnboardingStep(OnboardingStatus.STEP_2)
     public ResponseEntity<OnboardingProgressDto> selectInterests(
         @Valid @RequestBody OnboardingInterestsRequest request,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
@@ -88,7 +88,7 @@ public class OnboardingController {
         @ApiResponse(responseCode = "403", description = "Access denied: User is not in STEP_3")
     })
     @PostMapping("/connections")
-    @RequiresOnboardingStep(OnBoardingStatus.STEP_3)
+    @RequiresOnboardingStep(OnboardingStatus.STEP_3)
     public ResponseEntity<OnboardingProgressDto> establishConnections(
         @RequestBody OnboardingConnectionsRequest connections,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip

@@ -1,6 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.model;
 
-public enum OnBoardingStatus {
+public enum OnboardingStatus {
     PENDING_VERIFICATION("User needs to verify email"),
     STEP_1("First step of onboarding: Profile details"),
     STEP_2("Second step of onboarding: Preferences"),
@@ -9,7 +9,7 @@ public enum OnBoardingStatus {
 
     private final String description;
 
-    OnBoardingStatus(String description) {
+    OnboardingStatus(String description) {
         this.description = description;
     }
 
@@ -21,9 +21,9 @@ public enum OnBoardingStatus {
         return this != PENDING_VERIFICATION && this != COMPLETED;
     }
 
-    public OnBoardingStatus getNext() {
+    public OnboardingStatus getNext() {
         int nextIndex = this.ordinal() + 1;
-        OnBoardingStatus[] values = OnBoardingStatus.values();
+        OnboardingStatus[] values = OnboardingStatus.values();
 
         if (nextIndex >= values.length) {
             return this;
