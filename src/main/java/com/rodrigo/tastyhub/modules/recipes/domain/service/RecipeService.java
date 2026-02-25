@@ -11,6 +11,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
@@ -31,6 +32,13 @@ public class RecipeService {
 
     public Long getRecipesCountByUserId(Long userId) {
         return recipeRepository.countByAuthorId(userId);
+    }
+
+    public FullRecipeDto getRecipeById(Long recipeId) {
+        Recipe recipe = recipeRepository.findById(recipeId)
+            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
+
+        return RecipeMapper.toFullRecipeDto(recipe);
     }
 
     @RequiresVerification

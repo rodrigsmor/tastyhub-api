@@ -1,8 +1,11 @@
 package com.rodrigo.tastyhub.modules.recipes.application.mapper;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.domain.model.PreparationStep;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.tags.application.mapper.TagMapper;
+
+import java.util.Comparator;
 
 public final class RecipeMapper {
     private RecipeMapper() {}
@@ -21,7 +24,11 @@ public final class RecipeMapper {
             recipe.getCoverUrl(),
             recipe.getCoverAlt(),
             recipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientDto).toList(),
-            recipe.getSteps().stream().map(PreparationStepMapper::toPreparationStepDto).toList(),
+            recipe.getSteps()
+                .stream()
+                .sorted(Comparator.comparing(PreparationStep::getStepNumber))
+                .map(PreparationStepMapper::toPreparationStepDto)
+                .toList(),
             recipe.getTags().stream().map(TagMapper::toTagDto).toList(),
             recipe.getCreatedAt(),
             recipe.getUpdatedAt()
