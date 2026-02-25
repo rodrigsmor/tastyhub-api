@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -22,6 +23,23 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    @Operation(
+        summary = "Get current user profile",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Returns full profile data and statistics for the authenticated user."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "User Not Found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Internal Server Error"),
+    })
+    @GetMapping("/me")
+    public ResponseEntity<UserFullStatsDto> getMyProfile() {
+        UserFullStatsDto response = this.authService.getMyProfile();
+        return ResponseEntity.ok(response);
     }
 
     @Operation(

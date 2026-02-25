@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,14 +11,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(
@@ -31,6 +28,22 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @Operation(
+        summary = "Get user profile by ID",
+        description = "Retrieves public profile information and statistics (followers, following, etc.) for a specific user by their unique ID."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User profile retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found with the provided ID"),
+        @ApiResponse(responseCode = "401", description = "Full authentication is required to access this resource"),
+        @ApiResponse(responseCode = "500", description = "An unexpected error occurred while processing the request"),
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<UserFullStatsDto> getUserProfileById(@PathVariable("id") Long id) {
+        UserFullStatsDto user = this.userService.getUserProfileById(id);
+        return ResponseEntity.ok(user);
     }
 
     @Operation(
