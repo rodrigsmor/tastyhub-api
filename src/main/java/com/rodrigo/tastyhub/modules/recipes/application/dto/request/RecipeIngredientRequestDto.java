@@ -19,5 +19,5 @@ public record RecipeIngredientRequestDto(
 
     @Schema(example = "GRAMS", description = "Unit of measurement")
     @NotNull(message = "Measurement unit is required")
-    IngredientUnitEnum ingredientUnit
+    IngredientUnitEnum unit
 ) {}
