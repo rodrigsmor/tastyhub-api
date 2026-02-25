@@ -4,10 +4,10 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingIdentityRequest;
+import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
-import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
+import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.model.UserStatus;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
@@ -30,7 +30,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -75,7 +75,7 @@ class OnboardingServiceTest {
         fakeUser.setBio("Old bio");
 
         fakeUser.setFollowedTags(new HashSet<>());
-        fakeUser.setOnBoardingStatus(OnBoardingStatus.STEP_1);
+        fakeUser.setOnboardingStatus(OnboardingStatus.STEP_1);
     }
 
     @Nested
@@ -89,7 +89,12 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should update profile picture and user data when a file is provided")
         void shouldUpdateProfileWithFile() {
-            OnboardingIdentityRequest request = new OnboardingIdentityRequest("new.username", "New bio", "Alt text");
+            OnboardingProfileRequest request = new OnboardingProfileRequest(
+                "new.username",
+                "New bio",
+                "Alt text",
+                LocalDate.parse("1995-08-25")
+            );
             MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
@@ -101,7 +106,7 @@ class OnboardingServiceTest {
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertEquals("new.username", fakeUser.getUsername());
             assertEquals("New bio", fakeUser.getBio());
-            assertEquals(OnBoardingStatus.STEP_2, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.STEP_2, fakeUser.getOnboardingStatus());
 
             verify(userService, times(1)).updateProfilePicture(eq(file), eq("Alt text"));
             verify(userRepository).save(fakeUser);
@@ -110,7 +115,12 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should throw error if username is already taken")
         void shouldThrowErrorIfUsernameTaken() {
-            OnboardingIdentityRequest request = new OnboardingIdentityRequest("taken.user", "bio", null);
+            OnboardingProfileRequest request = new OnboardingProfileRequest(
+                "taken.user",
+                "bio",
+                null,
+                LocalDate.parse("1995-08-25")
+            );
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
             when(userRepository.existsByUsernameAndIdNot("taken.user", 1L)).thenReturn(true);
 
@@ -124,7 +134,12 @@ class OnboardingServiceTest {
         @DisplayName("Should return error if username exceeds 20 characters")
         void shouldReturnErrorIfUsernameExceedsLimit() {
             String longUsername = "username_muito_longo_mesmo";
-            OnboardingIdentityRequest request = new OnboardingIdentityRequest(longUsername, "bio", null);
+            OnboardingProfileRequest request = new OnboardingProfileRequest(
+                longUsername,
+                "bio",
+                null,
+                LocalDate.parse("1995-08-25")
+            );
 
             lenient().when(securityService.getCurrentUser()).thenReturn(fakeUser);
             lenient().when(userRepository.existsByUsernameAndIdNot(anyString(), anyLong())).thenReturn(false);
@@ -218,7 +233,7 @@ class OnboardingServiceTest {
 
             verifyNoInteractions(tagRepository);
             verifyNoInteractions(tagService);
-            assertEquals(OnBoardingStatus.STEP_3, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.STEP_3, fakeUser.getOnboardingStatus());
         }
 
         @Test
@@ -230,7 +245,7 @@ class OnboardingServiceTest {
 
             onboardingService.selectInterests(request, false);
 
-            verify(userRepository).save(argThat(user -> user.getOnBoardingStatus() == OnBoardingStatus.STEP_3));
+            verify(userRepository).save(argThat(user -> user.getOnboardingStatus() == OnboardingStatus.STEP_3));
         }
     }
 
@@ -256,7 +271,7 @@ class OnboardingServiceTest {
             ResponseEntity<OnboardingProgressDto> response = onboardingService.followInitialUsers(request, false);
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertEquals(OnBoardingStatus.COMPLETED, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
             assertTrue(fakeUser.getFollowing().stream()
                     .anyMatch(follow -> follow.getFollowing().equals(target1)),
                 "User should be following target1");
@@ -281,7 +296,7 @@ class OnboardingServiceTest {
 
             verify(userRepository, times(1)).save(fakeUser);
 
-            assertEquals(OnBoardingStatus.COMPLETED, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
         }
 
         @Test
@@ -299,7 +314,7 @@ class OnboardingServiceTest {
             onboardingService.followInitialUsers(request, false);
 
             assertTrue(fakeUser.getFollowing().isEmpty(), "User should not be following themselves");
-            assertEquals(OnBoardingStatus.COMPLETED, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
         }
 
         @Test
@@ -311,7 +326,7 @@ class OnboardingServiceTest {
 
             onboardingService.followInitialUsers(request, false);
 
-            assertEquals(OnBoardingStatus.COMPLETED, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
             verify(userRepository, times(1)).save(any());
         }
 
@@ -327,7 +342,7 @@ class OnboardingServiceTest {
 
             onboardingService.followInitialUsers(request, false);
 
-            assertEquals(OnBoardingStatus.COMPLETED, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
             assertTrue(fakeUser.getFollowing().isEmpty());
         }
     }
@@ -339,7 +354,7 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("1. Should throw ForbiddenException if onboarding is already finished")
         void shouldThrowForbiddenIfCompleted() {
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.COMPLETED);
+            fakeUser.setOnboardingStatus(OnboardingStatus.COMPLETED);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
 
@@ -350,7 +365,7 @@ class OnboardingServiceTest {
         @DisplayName("2. Should throw UnauthorizedException if account is not verified")
         void shouldThrowUnauthorizedIfNotVerified() {
             fakeUser.setStatus(UserStatus.PENDING);
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.PENDING_VERIFICATION);
+            fakeUser.setOnboardingStatus(OnboardingStatus.PENDING_VERIFICATION);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
 
@@ -360,7 +375,7 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("3. Should throw BadRequestException if already at STEP_1")
         void shouldThrowBadRequestIfAtStep1() {
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.STEP_1);
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_1);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
 
@@ -373,7 +388,7 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("4. Should revert from STEP_3 to STEP_2 successfully")
         void shouldRevertFromStep3ToStep2() throws BadRequestException {
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.STEP_3);
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_3);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
@@ -381,21 +396,21 @@ class OnboardingServiceTest {
             ResponseEntity<OnboardingProgressDto> response = onboardingService.backToPreviousStep();
 
             assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertEquals(OnBoardingStatus.STEP_2, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.STEP_2, fakeUser.getOnboardingStatus());
             verify(userRepository).save(fakeUser);
         }
 
         @Test
         @DisplayName("5. Should revert from STEP_2 to STEP_1 successfully")
         void shouldRevertFromStep2ToStep1() throws BadRequestException {
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.STEP_2);
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
             onboardingService.backToPreviousStep();
 
-            assertEquals(OnBoardingStatus.STEP_1, fakeUser.getOnBoardingStatus());
+            assertEquals(OnboardingStatus.STEP_1, fakeUser.getOnboardingStatus());
             verify(userRepository).save(fakeUser);
         }
     }
@@ -407,29 +422,29 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should return progress details based on user status")
         void shouldReturnProgressDetails() {
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.STEP_2);
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
 
             OnboardingProgressDto result = onboardingService.getCurrentStep();
 
             assertNotNull(result);
-            assertEquals(OnBoardingStatus.STEP_2, result.currentStatus());
-            assertEquals(OnBoardingStatus.STEP_3, result.nextStepAction());
+            assertEquals(OnboardingStatus.STEP_2, result.currentStatus());
+            assertEquals(OnboardingStatus.STEP_3, result.nextStepAction());
             assertFalse(result.isCompleted());
         }
 
         @Test
         @DisplayName("Should return isCompleted true when status is finished")
         void shouldReturnCompletedTrue() {
-            fakeUser.setOnBoardingStatus(OnBoardingStatus.COMPLETED);
+            fakeUser.setOnboardingStatus(OnboardingStatus.COMPLETED);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
 
             OnboardingProgressDto result = onboardingService.getCurrentStep();
 
             assertTrue(result.isCompleted());
-            assertEquals(OnBoardingStatus.COMPLETED, result.currentStatus());
+            assertEquals(OnboardingStatus.COMPLETED, result.currentStatus());
         }
     }
 }

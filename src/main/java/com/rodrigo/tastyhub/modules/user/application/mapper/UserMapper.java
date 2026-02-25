@@ -11,12 +11,12 @@ public final class UserMapper {
 
     public static UserSummaryDto toSummary(User user) {
         return new UserSummaryDto(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getUsername(),
-                user.getProfilePictureUrl(),
-                user.getProfilePictureAlt()
+            user.getId(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getUsername(),
+            user.getProfilePictureUrl(),
+            user.getProfilePictureAlt()
         );
     }
 
@@ -34,22 +34,28 @@ public final class UserMapper {
         );
     }
 
-    public static UserFullStatsDto toFullStats(User user, long recipeCount, long followerCount) {
+    public static UserFullStatsDto toFullStats(
+        User user,
+        long articleCount,
+        long recipeCount,
+        long followingCount,
+        long followersCount
+    ) {
         return new UserFullStatsDto(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getUsername(),
-                user.getProfilePictureUrl(),
-                user.getProfilePictureAlt(),
-                user.getBio(),
-                user.getCoverPhotoUrl(),
-                user.getCoverPhotoAlt(),
-                user.getDateOfBirth(),
-                recipeCount,
-                0,
-                followerCount,
-                0
+            user.getId(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getUsername(),
+            user.getProfilePictureUrl(),
+            user.getProfilePictureAlt(),
+            user.getBio(),
+            user.getCoverPhotoUrl(),
+            user.getCoverPhotoAlt(),
+            user.getDateOfBirth(),
+            recipeCount,
+            articleCount,
+            followersCount,
+            followingCount
         );
     }
 }

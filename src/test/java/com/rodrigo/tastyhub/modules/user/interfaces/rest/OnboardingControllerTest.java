@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
-import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
+import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
@@ -58,8 +58,8 @@ class OnboardingControllerTest {
         @DisplayName("Should update profile successfully and return 200 OK")
         void shouldUpdateProfileSuccessfully() throws Exception {
             OnboardingProgressDto expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.STEP_2,
-                OnBoardingStatus.STEP_3,
+                OnboardingStatus.STEP_2,
+                OnboardingStatus.STEP_3,
                 false
             );
 
@@ -99,8 +99,8 @@ class OnboardingControllerTest {
         @DisplayName("Should allow updating without a file")
         void shouldAllowUpdateWithoutFile() throws Exception {
             OnboardingProgressDto expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.STEP_2,
-                OnBoardingStatus.STEP_3,
+                OnboardingStatus.STEP_2,
+                OnboardingStatus.STEP_3,
                 false
             );
 
@@ -123,8 +123,8 @@ class OnboardingControllerTest {
         void shouldSelectInterestsSuccessfully() throws Exception {
             var request = new OnboardingInterestsRequest(Set.of(1L, 2L), Set.of("vegan"), null);
             var expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.STEP_3,
-                OnBoardingStatus.COMPLETED,
+                OnboardingStatus.STEP_3,
+                OnboardingStatus.COMPLETED,
                 false
             );
 
@@ -142,8 +142,8 @@ class OnboardingControllerTest {
         @DisplayName("2. Should allow skipping the step when shouldSkip is true")
         void shouldAllowSkippingStep() throws Exception {
             var expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.STEP_3,
-                OnBoardingStatus.COMPLETED,
+                OnboardingStatus.STEP_3,
+                OnboardingStatus.COMPLETED,
                 false
             );
 
@@ -213,8 +213,8 @@ class OnboardingControllerTest {
         void shouldCompleteOnboardingSuccessfully() throws Exception {
             var request = new OnboardingConnectionsRequest(Set.of(10L, 11L, 12L));
             var expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.COMPLETED,
-                OnBoardingStatus.COMPLETED,
+                OnboardingStatus.COMPLETED,
+                OnboardingStatus.COMPLETED,
                 true
             );
 
@@ -232,8 +232,8 @@ class OnboardingControllerTest {
         @DisplayName("2. Should allow skipping connections and still complete onboarding")
         void shouldAllowSkippingConnections() throws Exception {
             var expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.COMPLETED,
-                OnBoardingStatus.COMPLETED,
+                OnboardingStatus.COMPLETED,
+                OnboardingStatus.COMPLETED,
                 true
             );
 
@@ -262,8 +262,8 @@ class OnboardingControllerTest {
         void shouldHandleEmptyUserList() throws Exception {
             var request = new OnboardingConnectionsRequest(Set.of());
             var expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.COMPLETED,
-                OnBoardingStatus.COMPLETED,
+                OnboardingStatus.COMPLETED,
+                OnboardingStatus.COMPLETED,
                 true
             );
 
@@ -297,8 +297,8 @@ class OnboardingControllerTest {
         @DisplayName("1. Should revert from STEP_2 to STEP_1 successfully")
         void shouldGoBackSuccessfully() throws Exception {
             var expectedResponse = new OnboardingProgressDto(
-                OnBoardingStatus.STEP_1,
-                OnBoardingStatus.STEP_2,
+                OnboardingStatus.STEP_1,
+                OnboardingStatus.STEP_2,
                 false
             );
 
@@ -352,8 +352,8 @@ class OnboardingControllerTest {
         @DisplayName("Should return current onboarding status successfully")
         void shouldReturnCurrentStep() throws Exception {
             OnboardingProgressDto expectedResponse = new OnboardingProgressDto(
-                    OnBoardingStatus.STEP_2,
-                    OnBoardingStatus.STEP_3,
+                    OnboardingStatus.STEP_2,
+                    OnboardingStatus.STEP_3,
                     false
             );
 

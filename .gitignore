@@ -40,3 +40,5 @@ out/
 .DS_STORE
 
 /uploads/**
+
+notes.txt

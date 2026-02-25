@@ -1,9 +1,9 @@
 package com.rodrigo.tastyhub.modules.user.application.dto.response;
 
-import com.rodrigo.tastyhub.modules.user.domain.model.OnBoardingStatus;
+import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 
 public record OnboardingProgressDto(
-    OnBoardingStatus currentStatus,
-    OnBoardingStatus nextStepAction,
+    OnboardingStatus currentStatus,
+    OnboardingStatus nextStepAction,
     boolean isCompleted
 ) {}

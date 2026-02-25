@@ -5,9 +5,13 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
+import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
+import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
+import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.*;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
 import com.rodrigo.tastyhub.modules.auth.domain.model.RefreshToken;
@@ -43,6 +47,12 @@ public class AuthService {
     private JwtGenerator jwtGenerator;
 
     @Autowired
+    private SecurityService securityService;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
@@ -59,6 +69,12 @@ public class AuthService {
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
+
+    public UserFullStatsDto getMyProfile() {
+        return userService.getUserProfileById(
+            securityService.getCurrentUser().getId()
+        );
+    }
 
     @Transactional
     public ResponseEntity<SignupResponseDto> signup(SignupRequestDto signupDto) throws BadRequestException {
@@ -80,6 +96,11 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(signupDto.password()));
         user.setStatus(UserStatus.PENDING);
+
+        UserSettings settings = new UserSettings();;
+
+        settings.setUser(user);
+        user.setSettings(settings);
 
         userRepository.save(user);
 
@@ -119,7 +140,7 @@ public class AuthService {
         return ResponseEntity.ok(new LoginResponseDto(
             accessToken,
             refreshToken,
-            user.getOnBoardingStatus().name()
+            user.getOnboardingStatus().name()
         ));
     }
 

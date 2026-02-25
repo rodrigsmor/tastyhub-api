@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.model;
 
+import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
 import com.rodrigo.tastyhub.modules.social.domain.model.Follow;
 import com.rodrigo.tastyhub.modules.social.domain.model.FollowId;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
@@ -101,21 +102,24 @@ public class User {
     )
     private Set<Follow> followers = new HashSet<>();
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private UserSettings settings;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 20)
+    @Column(name = "status", length = 50, columnDefinition = "user_status_enum")
     private UserStatus status = UserStatus.PENDING;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "on_boarding_status", length = 50)
-    private OnBoardingStatus onBoardingStatus = OnBoardingStatus.PENDING_VERIFICATION;
+    @Column(name = "onboarding_status", length = 50, columnDefinition = "onboarding_status_enum")
+    private OnboardingStatus onboardingStatus = OnboardingStatus.PENDING_VERIFICATION;
 
-    @Column(name = "on_boarding_started_at")
-    private OffsetDateTime onBoardingStartedAt;
+    @Column(name = "onboarding_started_at")
+    private OffsetDateTime onboardingStartedAt;
 
-    @Column(name = "on_boarding_completed_at")
-    private OffsetDateTime onBoardingCompletedAt;
+    @Column(name = "onboarding_completed_at")
+    private OffsetDateTime onboardingCompletedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -133,25 +137,25 @@ public class User {
 
     public Boolean isVerified() {
         return this.getStatus() == UserStatus.ACTIVE
-            || this.getOnBoardingStatus() != OnBoardingStatus.PENDING_VERIFICATION;
+            || this.getOnboardingStatus() != OnboardingStatus.PENDING_VERIFICATION;
     }
 
     public Boolean isOnboardingFinished() {
-        return this.getOnBoardingStatus() == OnBoardingStatus.COMPLETED;
+        return this.getOnboardingStatus() == OnboardingStatus.COMPLETED;
     }
 
     public void startOnboarding() {
-        if (this.onBoardingStatus != OnBoardingStatus.PENDING_VERIFICATION) {
+        if (this.onboardingStatus != OnboardingStatus.PENDING_VERIFICATION) {
             throw new IllegalStateException("Cannot start onboarding from current state");
         }
-        this.onBoardingStatus = OnBoardingStatus.STEP_1;
-        this.onBoardingStartedAt = OffsetDateTime.now();
+        this.onboardingStatus = OnboardingStatus.STEP_1;
+        this.onboardingStartedAt = OffsetDateTime.now();
     }
 
     public void completeOnboarding() {
-        this.onBoardingStatus = OnBoardingStatus.COMPLETED;
+        this.onboardingStatus = OnboardingStatus.COMPLETED;
         this.status = UserStatus.ACTIVE;
-        this.onBoardingCompletedAt = OffsetDateTime.now();
+        this.onboardingCompletedAt = OffsetDateTime.now();
     }
 
     public void followTag(Tag tag) {
