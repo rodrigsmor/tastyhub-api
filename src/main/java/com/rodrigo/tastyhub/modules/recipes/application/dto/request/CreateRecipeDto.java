@@ -41,7 +41,7 @@ public record CreateRecipeDto(
     @Schema(description = "List of step-by-step instructions")
     @NotEmpty(message = "At least one instruction step is required")
     @Valid
-    List<PreparationStepRequestDto> instructions,
+    List<PreparationStepRequestDto> steps,
 
     @Schema(description = "List of ingredients with quantities")
     @NotEmpty(message = "At least one ingredient is required")
@@ -60,7 +60,15 @@ public record CreateRecipeDto(
         return cookTimeMax >= cookTimeMin;
     }
 
+    public boolean hasCurrency() {
+        return currencyId != null && estimatedCost != null;
+    }
+
     public boolean hasTags() {
         return !tagIds.isEmpty();
+    }
+
+    public boolean hasSteps() {
+        return steps != null && !steps.isEmpty();
     }
 }

@@ -17,7 +17,7 @@ public record RecipeIngredientRequestDto(
     @NotNull(message = "Ingredient ID is required")
     Long ingredientId,
 
-    @Schema(example = "GRAMS", description = "Unit of measurement")
+    @Schema(example = "GRAM", description = "Unit of measurement")
     @NotNull(message = "Measurement unit is required")
     IngredientUnitEnum unit
 ) {}

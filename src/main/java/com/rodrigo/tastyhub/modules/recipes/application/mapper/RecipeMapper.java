@@ -15,7 +15,9 @@ public final class RecipeMapper {
             recipe.getCookTimeMin(),
             recipe.getCookTimeMax(),
             recipe.getEstimatedCost(),
-            CurrencyMapper.toRecipeCurrencyDto(recipe.getCurrency()),
+            recipe.getCurrency() != null
+                ? CurrencyMapper.toRecipeCurrencyDto(recipe.getCurrency())
+                : null,
             recipe.getCoverUrl(),
             recipe.getCoverAlt(),
             recipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientDto).toList(),

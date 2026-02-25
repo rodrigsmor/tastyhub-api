@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
-    long countByUserId(Long userId);
+    long countByAuthorId(Long userId);
 }

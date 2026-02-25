@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.model;
 
+import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
 import com.rodrigo.tastyhub.modules.social.domain.model.Follow;
 import com.rodrigo.tastyhub.modules.social.domain.model.FollowId;
@@ -13,9 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
@@ -69,6 +68,10 @@ public class User {
     )
     private Set<Tag> followedTags = new HashSet<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Recipe> recipes = new ArrayList<>();
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
@@ -102,8 +105,9 @@ public class User {
     )
     private Set<Follow> followers = new HashSet<>();
 
+    @Builder.Default
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private UserSettings settings;
+    private UserSettings settings = new UserSettings();
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -184,5 +188,10 @@ public class User {
         targetUser.getFollowers().removeIf(follow ->
             follow.getFollower().getId().equals(this.id)
         );
+    }
+
+    public void addRecipe(Recipe recipe) {
+        this.recipes.add(recipe);
+        recipe.setAuthor(this);
     }
 }

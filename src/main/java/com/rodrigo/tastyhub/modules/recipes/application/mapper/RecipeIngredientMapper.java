@@ -8,8 +8,11 @@ public final class RecipeIngredientMapper {
 
     public static IngredientDto toIngredientDto(RecipeIngredient ingredient) {
         return new IngredientDto(
+            ingredient.getId(),
+            ingredient.getIngredient().getName(),
             ingredient.getIngredient().getId(),
-            ingredient.getIngredient().getName()
+            ingredient.getQuantity(),
+            ingredient.getUnit()
         );
     }
 }
