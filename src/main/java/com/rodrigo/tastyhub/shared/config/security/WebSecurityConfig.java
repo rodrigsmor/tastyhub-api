@@ -42,9 +42,7 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                 .requestMatchers(
                     "/swagger-ui/**",
-                    "/swagger-ui.html",
                     "/api-docs/**",
-                    "/swagger-ui.html",
                     "/hello-world",
                     "/api/auth/login",
                     "/api/auth/signup",
@@ -53,6 +51,7 @@ public class WebSecurityConfig {
                 ).permitAll()
                 .requestMatchers("/api/auth/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/recipe/**").permitAll()
                 .anyRequest().authenticated()
             ).httpBasic(Customizer.withDefaults());
 

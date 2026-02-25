@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.tags.domain.model;
 
+import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,6 +30,10 @@ public class Tag {
     @Builder.Default
     @ManyToMany(mappedBy = "followedTags")
     private Set<User> followers = new HashSet<>();
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "tags")
+    private Set<Recipe> recipes = new HashSet<>();
 
     public Tag(Long id, String name) {
         this.id = id;

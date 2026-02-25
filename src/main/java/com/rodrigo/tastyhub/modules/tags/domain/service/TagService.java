@@ -13,10 +13,11 @@ import java.util.stream.Collectors;
 @Service
 public class TagService {
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private TagRepository tagRepository;
+
+    public List<Tag> findAllById(Collection<Long> tagIds) {
+        return tagRepository.findAllById(tagIds);
+    }
 
     @Transactional
     public Set<Tag> ensureTagsExist(Set<String> names) {

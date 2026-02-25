@@ -37,7 +37,6 @@ public class UserController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "User profile retrieved successfully"),
         @ApiResponse(responseCode = "404", description = "User not found with the provided ID"),
-        @ApiResponse(responseCode = "401", description = "Full authentication is required to access this resource"),
         @ApiResponse(responseCode = "500", description = "An unexpected error occurred while processing the request"),
     })
     @GetMapping("/{id}")

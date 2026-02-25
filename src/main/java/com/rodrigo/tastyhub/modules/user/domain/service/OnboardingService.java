@@ -2,14 +2,12 @@ package com.rodrigo.tastyhub.modules.user.domain.service;
 
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
-import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
-import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
@@ -40,12 +38,6 @@ public class OnboardingService {
     @Autowired
     private TagService tagService;
 
-    @Autowired
-    private TagRepository tagRepository;
-
-    @Autowired
-    private ImageStorageService imageStorageService;
-
     @Transactional
     @FileRollback
     @FileCleanup
@@ -68,6 +60,11 @@ public class OnboardingService {
         return ResponseEntity.ok(this.getOnboardingProgressResponse(userRepository.save(user)));
     }
 
+    public void startOnboarding(User user) {
+        user.startOnboarding();
+        userRepository.save(user);
+    }
+
     @Transactional
     public ResponseEntity<OnboardingProgressDto> selectInterests(
         OnboardingInterestsRequest request,
@@ -80,7 +77,7 @@ public class OnboardingService {
         }
 
         if (request.hasUnfollowTagIds()) {
-            List<Tag> tagsToUnfollow = tagRepository.findAllById(request.unfollowTagIds());
+            List<Tag> tagsToUnfollow = tagService.findAllById(request.unfollowTagIds());
             tagsToUnfollow.forEach(user::unfollowTag);
         }
 
@@ -90,7 +87,7 @@ public class OnboardingService {
         }
 
         if (request.hasTagIds()) {
-            List<Tag> existingTags = tagRepository.findAllById(request.tagIds());
+            List<Tag> existingTags = tagService.findAllById(request.tagIds());
             existingTags.forEach(user::followTag);
         }
 

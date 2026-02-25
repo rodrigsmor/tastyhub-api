@@ -1,10 +1,9 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.repository;
 
-import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
+import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RecipeRepository extends JpaRepository<Recipe, Long> {
-    long countByAuthorId(Long userId);
+public interface CurrencyRepository extends JpaRepository<Currency, Short> {
 }

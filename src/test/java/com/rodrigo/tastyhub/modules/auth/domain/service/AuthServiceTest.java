@@ -8,6 +8,8 @@ import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepositor
 import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
+import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
+import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.InfrastructureException;
@@ -40,6 +42,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Collections;
 import java.util.Optional;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,19 +54,19 @@ class AuthServiceTest {
     private JwtGenerator jwtGenerator;
 
     @Mock
-    private AuthenticationManager authenticationManager;
+    private UserService userService;
 
     @Mock
-    private UserRepository userRepository;
+    private AuthenticationManager authenticationManager;
 
     @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private RoleRepository roleRepository;
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
-    private RefreshTokenRepository refreshTokenRepository;
+    private OnboardingService onboardingService;
 
     @Mock
     private VerificationTokenRepository verificationTokenRepository;
@@ -81,7 +84,7 @@ class AuthServiceTest {
     class SignupTests {
         @Test
         @DisplayName("Should throws BadRequest when e-mail is already in use")
-        void shouldThrowsBadRequestExceptionWhenEmailIsAlreadyInUse() {
+        void shouldThrowsBadRequestExceptionWhenEmailIsAlreadyInUse() throws BadRequestException {
             SignupRequestDto signupDto = new SignupRequestDto(
                 "Mary",
                 "Smith",
@@ -89,28 +92,13 @@ class AuthServiceTest {
                 "123Password!"
             );
 
-            when(userRepository.existsByUsername(signupDto.email())).thenReturn(true);
+            when(userService.createNewUser(signupDto))
+                .thenThrow(new BadRequestException("This email is already in use"));
 
             assertThrows(BadRequestException.class, () -> {
                 authService.signup(signupDto);
             });
-        }
-
-        @Test
-        @DisplayName("Should throws Infrastructure when default role is not found")
-        void shouldThrowsInfrastructureExceptionWhenDefaultRoleIsNotFound() {
-            SignupRequestDto signupDto = new SignupRequestDto(
-                "Mary",
-                "Smith",
-                "mary.smith@example.com",
-                "123Password!"
-            );
-
-            when(userRepository.existsByUsername(signupDto.email())).thenReturn(false);
-
-            assertThrows(InfrastructureException.class, () -> {
-                authService.signup(signupDto);
-            });
+            verify(userService).createNewUser(signupDto);
         }
 
         @Test
@@ -125,10 +113,17 @@ class AuthServiceTest {
 
             Role userRole = new Role(1L, UserRole.ROLE_USER);
 
-            when(userRepository.existsByUsername(signupDto.email())).thenReturn(false);
-            when(roleRepository.findByName(UserRole.ROLE_USER)).thenReturn(Optional.of(userRole));
+            User user = User.builder()
+                .id(1L)
+                .firstName(signupDto.firstName())
+                .lastName(signupDto.lastName())
+                .email(signupDto.email())
+                .password("crypted")
+                .roles(Set.of(userRole))
+                .username(signupDto.email())
+                .build();
 
-            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(userService.createNewUser(signupDto)).thenReturn(user);
 
             ResponseEntity<SignupResponseDto> response = authService.signup(signupDto);
 
@@ -138,12 +133,13 @@ class AuthServiceTest {
             assertTrue(response.getHeaders().getLocation().toString().contains("/api/auth/signup"));
 
             SignupResponseDto body = response.getBody();
+
             assertNotNull(body);
             assertEquals(signupDto.email(), body.emailSentTo());
 
             assertTrue(body.message().contains("verify your account."));
 
-            verify(userRepository, times(1)).save(any(User.class));
+            verify(userService, times(1)).createNewUser(signupDto);
         }
     }
 
@@ -166,7 +162,7 @@ class AuthServiceTest {
             });
 
             verify(jwtGenerator, never()).generateToken(any());
-            verify(userRepository, never()).findByEmail(any());
+            verify(userService, never()).getVerifiedUserByEmail(any());
         }
 
         @Test
@@ -189,40 +185,10 @@ class AuthServiceTest {
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
-            when(userRepository.findByEmail(loginDto.email()))
+            when(userService.getVerifiedUserByEmail(loginDto.email()))
                 .thenThrow(new BadCredentialsException("User record not found"));
 
             assertThrows(BadCredentialsException.class, () -> {
-                authService.login(loginDto);
-            });
-
-            verify(jwtGenerator, never()).generateToken(any());
-        }
-
-        @Test
-        @DisplayName("Should throw ForbiddenException when User is not validated")
-        void shouldThrowForbiddenExceptionWhenUserStatusIsPending() {
-            LoginRequestDto loginDto = new LoginRequestDto(
-                "wrong@email.com",
-                "wrongpass"
-            );
-
-            User user = new User();
-            user.setEmail(loginDto.email());
-            user.setStatus(UserStatus.PENDING);
-
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user.getEmail(),
-                null,
-                Collections.emptyList()
-            );
-
-            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                    .thenReturn(authentication);
-            when(userRepository.findByEmail(loginDto.email()))
-                    .thenReturn(Optional.of(user));
-
-            assertThrows(ForbiddenException.class, () -> {
                 authService.login(loginDto);
             });
 
@@ -249,8 +215,7 @@ class AuthServiceTest {
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(authentication);
-            when(userRepository.findByEmail(loginDto.email()))
-                    .thenReturn(Optional.of(user));
+            when(userService.getVerifiedUserByEmail(loginDto.email())).thenReturn(user);
             when(jwtGenerator.generateToken(authentication)).thenReturn("mocked-jwt-token");
 
             ResponseEntity<LoginResponseDto> response = authService.login(loginDto);
@@ -428,7 +393,7 @@ class AuthServiceTest {
                 authService.verifyEmail(token);
             });
 
-            verify(userRepository, never()).save(any());
+            verify(onboardingService, never()).startOnboarding(any());
             verify(verificationTokenRepository, never()).delete(any());
         }
 
@@ -454,7 +419,7 @@ class AuthServiceTest {
                 authService.verifyEmail(token);
             });
 
-            verify(userRepository, never()).save(any());
+            verify(onboardingService, never()).startOnboarding(any());
             verify(verificationTokenRepository, never()).delete(any());
         }
 
@@ -475,8 +440,6 @@ class AuthServiceTest {
             when(verificationTokenRepository.findByToken(validToken))
                 .thenReturn(Optional.of(vToken));
 
-            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
-
             when(jwtGenerator.generateToken(any(Authentication.class)))
                 .thenReturn("generated-access-token");
 
@@ -488,7 +451,7 @@ class AuthServiceTest {
 
             assertNotEquals(UserStatus.PENDING, user.getStatus());
 
-            verify(userRepository).save(user);
+            verify(onboardingService).startOnboarding(user);
             verify(verificationTokenRepository).delete(vToken);
 
             assertNotNull(SecurityContextHolder.getContext().getAuthentication());

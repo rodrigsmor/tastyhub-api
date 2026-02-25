@@ -2,6 +2,7 @@ package com.rodrigo.tastyhub.modules.recipes.domain.model;
 
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
+import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -45,8 +46,9 @@ public class Recipe {
     @JoinColumn(name = "currency_id")
     private Currency currency;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User author;
 
     @Column(name = "cover_url")
     private String coverUrl;
