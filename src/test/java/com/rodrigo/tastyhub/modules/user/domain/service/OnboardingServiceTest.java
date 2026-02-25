@@ -49,9 +49,6 @@ class OnboardingServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private TagRepository tagRepository;
-
-    @Mock
     private SecurityService securityService;
 
     @Mock
@@ -152,8 +149,8 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should unfollow tags when unfollowTagIds is provided")
         void shouldUnfollowTagsWhenProvided() {
-            Tag tag1 = new Tag(3L, "Pasta", new HashSet<>());
-            Tag tag2 = new Tag(8L, "Meat", new HashSet<>());
+            Tag tag1 = new Tag(3L, "Pasta", new HashSet<>(), new HashSet<>());
+            Tag tag2 = new Tag(8L, "Meat", new HashSet<>(), new HashSet<>());
             Set<Long> idsToUnfollow = Set.of(3L, 8L);
 
             Set<Tag> userTags = new HashSet<>();
@@ -165,14 +162,14 @@ class OnboardingServiceTest {
             List<Tag> tagsFromDb = List.of(tag1, tag2);
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(tagRepository.findAllById(idsToUnfollow)).thenReturn(tagsFromDb);
+            when(tagService.findAllById(idsToUnfollow)).thenReturn(tagsFromDb);
             when(userRepository.save(any(User.class))).thenReturn(fakeUser);
 
             onboardingService.selectInterests(request, false);
 
             assertTrue(request.hasUnfollowTagIds());
             assertTrue(fakeUser.getFollowedTags().isEmpty());
-            verify(tagRepository).findAllById(idsToUnfollow);
+            verify(tagService).findAllById(idsToUnfollow);
             verify(userRepository).save(fakeUser);
         }
 
@@ -185,8 +182,8 @@ class OnboardingServiceTest {
             OnboardingInterestsRequest request = new OnboardingInterestsRequest(null, newTagsNames, null);
 
             Set<Tag> tagsCreated = Set.of(
-                new Tag(10L, "homemade pasta", new HashSet<>()),
-                new Tag(11L, "vegan", new HashSet<>())
+                new Tag(10L, "homemade pasta", new HashSet<>(), new HashSet<>()),
+                new Tag(11L, "vegan", new HashSet<>(), new HashSet<>())
             );
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
@@ -208,18 +205,18 @@ class OnboardingServiceTest {
             OnboardingInterestsRequest request = new OnboardingInterestsRequest(tagIds, null, null);
 
             List<Tag> existingTags = List.of(
-                new Tag(1L, "Italian", new HashSet<>()),
-                new Tag(5L, "Salads", new HashSet<>())
+                new Tag(1L, "Italian", new HashSet<>(), new HashSet<>()),
+                new Tag(5L, "Salads", new HashSet<>(), new HashSet<>())
             );
 
             when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(tagRepository.findAllById(tagIds)).thenReturn(existingTags);
+            when(tagService.findAllById(tagIds)).thenReturn(existingTags);
             when(userRepository.save(any(User.class))).thenReturn(fakeUser);
 
             onboardingService.selectInterests(request, false);
 
             assertTrue(request.hasTagIds());
-            verify(tagRepository).findAllById(tagIds);
+            verify(tagService, times(1)).findAllById(tagIds);
         }
 
         @Test
@@ -231,7 +228,6 @@ class OnboardingServiceTest {
 
             onboardingService.selectInterests(request, true);
 
-            verifyNoInteractions(tagRepository);
             verifyNoInteractions(tagService);
             assertEquals(OnboardingStatus.STEP_3, fakeUser.getOnboardingStatus());
         }
