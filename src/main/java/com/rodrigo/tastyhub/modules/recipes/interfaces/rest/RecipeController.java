@@ -1,7 +1,9 @@
 package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesRequest;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @Tag(
     name = "Recipes",
@@ -48,10 +51,22 @@ public class RecipeController {
     }
 
     @Operation(
+        summary = "Retrieve a list of recipes",
+        description = ""
+    )
+    @GetMapping
+    public ResponseEntity<RecipePagination> listAllRecipes(
+        @ModelAttribute ListRecipesRequest request
+    ) {
+        RecipePagination response = this.recipeService.listRecipes(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
         summary = "Create a new recipe",
-            security = { @SecurityRequirement(name = "bearerAuth") },
-            description = "Registers a new recipe with its instructions, ingredients, and tags. " +
-                "The user must be verified to perform this action."
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Registers a new recipe with its instructions, ingredients, and tags. " +
+            "The user must be verified to perform this action."
     )
     @ApiResponses({
         @ApiResponse(

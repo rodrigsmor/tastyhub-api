@@ -1,7 +1,10 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesRequest;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.SummaryRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.CurrencyRepository;
@@ -11,6 +14,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +40,7 @@ public class RecipeService {
 
     public FullRecipeDto getRecipeById(Long recipeId) {
         Recipe recipe = recipeRepository.findById(recipeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
+                .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
 
         return RecipeMapper.toFullRecipeDto(recipe);
     }
@@ -87,6 +91,26 @@ public class RecipeService {
         Recipe savedRecipe = recipeRepository.save(recipe);
 
         return RecipeMapper.toFullRecipeDto(savedRecipe);
+    }
+
+    @Transactional
+    public RecipePagination listRecipes(ListRecipesRequest request) {
+        List<SummaryRecipeDto> recipes = recipeRepository.findAll()
+            .stream()
+            .map(RecipeMapper::toSummaryDto)
+            .toList();
+
+        PaginationMetadata metadata = new PaginationMetadata(
+            request.page(),
+            request.size(),
+            0,
+            0,
+            request.direction(),
+            true,
+            false
+        );
+
+        return new RecipePagination(recipes, metadata);
     }
 
     // CREATE, READ, UPDATE, DELETE
