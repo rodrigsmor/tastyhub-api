@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import java.util.List;
 
 public record ListRecipesRequest(
+    String query,
     @Min(0)
     Integer page,
     @Max(100)
@@ -15,7 +16,6 @@ public record ListRecipesRequest(
     RecipeSortBy sortBy,
     SortDirection direction,
     List<String> tags,
-    List<String> languages,
     List<String> categories,
     List<String> ingredients,
     List<String> currencies,
