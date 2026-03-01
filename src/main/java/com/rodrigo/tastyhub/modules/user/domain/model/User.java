@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.model;
 
+import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
 import com.rodrigo.tastyhub.modules.social.domain.model.Follow;
@@ -118,6 +119,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "onboarding_status", length = 50, columnDefinition = "onboarding_status_enum")
     private OnboardingStatus onboardingStatus = OnboardingStatus.PENDING_VERIFICATION;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<UserCollection> collections = new ArrayList<>();
 
     @Column(name = "onboarding_started_at")
     private OffsetDateTime onboardingStartedAt;
