@@ -4,8 +4,11 @@ CREATE TYPE recipe_category_enum AS ENUM (
     'DESSERT', 'MEAL', 'LUNCH', 'DRINK'
 );
 
-ALTER TABLE recipes
-ADD COLUMN category recipe_category_enum NOT NULL;
+ALTER TABLE recipes ADD COLUMN category recipe_category_enum;
+
+UPDATE recipes SET category = 'MEAL' WHERE category IS NULL;
+
+ALTER TABLE recipes ALTER COLUMN category SET NOT NULL;
 
 CREATE TABLE recipe_statistics (
     recipe_id BIGINT PRIMARY KEY,
