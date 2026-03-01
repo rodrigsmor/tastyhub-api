@@ -40,18 +40,23 @@ public class UserCollection {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Builder.Default
     @Column(name = "is_favorite", nullable = false)
     private boolean isFavorite = false;
 
+    @Builder.Default
     @Column(name = "is_fixed", nullable = false)
     private boolean isFixed = false;
 
+    @Builder.Default
     @Column(name = "is_public", nullable = false)
     private boolean isPublic = false;
 
+    @Builder.Default
     @Column(name = "is_deletable", nullable = false)
     private boolean isDeletable = true;
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
         name = "recipe_collections",
@@ -60,6 +65,7 @@ public class UserCollection {
     )
     private Set<Recipe> recipes = new HashSet<>();
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
         name = "article_collections",
