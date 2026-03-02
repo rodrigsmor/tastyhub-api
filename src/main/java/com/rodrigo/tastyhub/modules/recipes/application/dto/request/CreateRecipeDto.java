@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -18,6 +19,10 @@ public record CreateRecipeDto(
     @Schema(example = "A classic Italian pasta dish...", description = "Brief description of the recipe")
     @NotBlank(message = "Description is required")
     String description,
+
+    @Schema(example = "MEAL", description = "Recipe Category")
+    @NotNull
+    RecipeCategory category,
 
     @Schema(example = "20", description = "Minimum cooking time in minutes")
     @NotNull(message = "Minimum cook time is required")

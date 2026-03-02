@@ -32,6 +32,7 @@ public final class RecipeMapper {
             recipe.getId(),
             recipe.getTitle(),
             recipe.getDescription(),
+            recipe.getCategory(),
             recipe.getCookTimeMin(),
             recipe.getCookTimeMax(),
             recipe.getEstimatedCost(),
@@ -40,13 +41,20 @@ public final class RecipeMapper {
                 : null,
             recipe.getCoverUrl(),
             recipe.getCoverAlt(),
-            recipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientDto).toList(),
+            recipe.getIngredients()
+                .stream()
+                .map(RecipeIngredientMapper::toIngredientDto)
+                .toList(),
             recipe.getSteps()
                 .stream()
                 .sorted(Comparator.comparing(PreparationStep::getStepNumber))
                 .map(PreparationStepMapper::toPreparationStepDto)
                 .toList(),
             recipe.getTags().stream().map(TagMapper::toTagDto).toList(),
+            0,
+            0,
+            0,
+            0,
             recipe.getCreatedAt(),
             recipe.getUpdatedAt()
         );
