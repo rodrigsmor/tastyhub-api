@@ -16,6 +16,7 @@ import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -129,12 +130,17 @@ public class RecipeService {
 
     @RequiresVerification
     @Transactional
-    public void deleteRecipeById(Long id) throws BadRequestException {
-        if (id == null) {
-            throw new BadRequestException("Id was not provided");
+    public void deleteRecipeById(Long id) {
+        Recipe recipe = recipeRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found"));
+
+        Long currentUserId = securityService.getCurrentUser().getId();
+
+        if (!recipe.getAuthor().getId().equals(currentUserId)) {
+            throw new ForbiddenException("You do not have permission to delete this recipe");
         }
 
-        recipeRepository.deleteById(id);
+        recipeRepository.delete(recipe);
     }
 
     @RequiresVerification
