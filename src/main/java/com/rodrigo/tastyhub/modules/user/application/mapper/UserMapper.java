@@ -4,10 +4,18 @@ import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsD
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserProfileDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class UserMapper {
+    private static ImageStorageService storageService;
 
-    private UserMapper() {}
+    @Autowired
+    public void setStorageService(ImageStorageService storageService) {
+        UserMapper.storageService = storageService;
+    }
 
     public static UserSummaryDto toSummary(User user) {
         return new UserSummaryDto(
@@ -15,7 +23,7 @@ public final class UserMapper {
             user.getFirstName(),
             user.getLastName(),
             user.getUsername(),
-            user.getProfilePictureUrl(),
+            storageService.generateImageUrl(user.getProfilePictureUrl()),
             user.getProfilePictureAlt()
         );
     }
@@ -26,10 +34,10 @@ public final class UserMapper {
             user.getFirstName(),
             user.getLastName(),
             user.getUsername(),
-            user.getProfilePictureUrl(),
+            storageService.generateImageUrl(user.getProfilePictureUrl()),
             user.getProfilePictureAlt(),
             user.getBio(),
-            user.getCoverPhotoUrl(),
+            storageService.generateImageUrl(user.getCoverPhotoUrl()),
             user.getCoverPhotoAlt()
         );
     }
@@ -46,10 +54,10 @@ public final class UserMapper {
             user.getFirstName(),
             user.getLastName(),
             user.getUsername(),
-            user.getProfilePictureUrl(),
+            storageService.generateImageUrl(user.getProfilePictureUrl()),
             user.getProfilePictureAlt(),
             user.getBio(),
-            user.getCoverPhotoUrl(),
+            storageService.generateImageUrl(user.getCoverPhotoUrl()),
             user.getCoverPhotoAlt(),
             user.getDateOfBirth(),
             recipeCount,

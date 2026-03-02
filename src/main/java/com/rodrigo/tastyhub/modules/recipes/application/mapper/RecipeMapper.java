@@ -6,11 +6,20 @@ import com.rodrigo.tastyhub.modules.recipes.domain.model.PreparationStep;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.tags.application.mapper.TagMapper;
 import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
+import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 
+@Component
 public final class RecipeMapper {
-    private RecipeMapper() {}
+    private static ImageStorageService storageService;
+
+    @Autowired
+    public void setStorageService(ImageStorageService storageService) {
+        RecipeMapper.storageService = storageService;
+    }
 
     public static SummaryRecipeDto toSummaryDto(Recipe recipe) {
         return new SummaryRecipeDto(
@@ -21,7 +30,7 @@ public final class RecipeMapper {
             recipe.getCookTimeMin() != null ? recipe.getCookTimeMin() : 0,
             0,
             0,
-            recipe.getCoverUrl(),
+            storageService.generateImageUrl(recipe.getCoverUrl()),
             recipe.getCoverAlt(),
             UserMapper.toSummary(recipe.getAuthor())
         );
@@ -39,7 +48,7 @@ public final class RecipeMapper {
             recipe.getCurrency() != null
                 ? CurrencyMapper.toRecipeCurrencyDto(recipe.getCurrency())
                 : null,
-            recipe.getCoverUrl(),
+            storageService.generateImageUrl(recipe.getCoverUrl()),
             recipe.getCoverAlt(),
             recipe.getIngredients()
                 .stream()
