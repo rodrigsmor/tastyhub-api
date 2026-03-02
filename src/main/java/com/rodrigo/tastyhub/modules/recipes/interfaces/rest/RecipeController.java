@@ -5,6 +5,8 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQ
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
+import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
+import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,8 +50,8 @@ public class RecipeController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<FullRecipeDto> getRecipeById(@PathVariable("id") Long id) {
-        FullRecipeDto response = this.recipeService.getRecipeById(id);
-        return ResponseEntity.ok(response);
+        Recipe response = this.recipeService.findByIdOrThrow(id);
+        return ResponseEntity.ok(RecipeMapper.toFullRecipeDto(response));
     }
 
     @Operation(
@@ -162,7 +164,7 @@ public class RecipeController {
     public ResponseEntity<FullRecipeDto> updateRecipeById(
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRecipeDto body
-    ) {
+    ) throws BadRequestException {
         FullRecipeDto response = this.recipeService.updateRecipeById(id, body);
         return ResponseEntity.ok(response);
     }
