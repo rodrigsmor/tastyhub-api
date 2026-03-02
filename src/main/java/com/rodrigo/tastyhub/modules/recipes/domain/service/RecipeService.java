@@ -11,13 +11,17 @@ import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.recipes.infrastructure.persistence.RecipeSpecification;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
+import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
+import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
@@ -26,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +43,7 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final CurrencyService currencyService;
     private final IngredientService ingredientService;
+    private final ImageStorageService imageStorageService;
 
     public Long getRecipesCountByUserId(Long userId) {
         return recipeRepository.countByAuthorId(userId);
@@ -183,6 +189,33 @@ public class RecipeService {
         }
 
         return null;
+    }
+
+    @FileCleanup
+    @Transactional
+    public Recipe updateCoverById(Long recipeId, MultipartFile file, String alternativeText) {
+        Long userId = securityService.getCurrentUser().getId();
+
+        Recipe recipe = findByIdOrThrow(recipeId);
+
+        if (!recipe.getAuthor().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to update this recipe");
+        }
+
+        String oldFileName = recipe.getCoverUrl();
+
+        String filename = imageStorageService.storeImage(file);
+
+        recipe.setCoverUrl(filename);
+        recipe.setCoverAlt(alternativeText);
+
+        recipeRepository.save(recipe);
+
+        if (oldFileName != null) {
+            imageStorageService.deleteImage(oldFileName);
+        }
+
+        return recipe;
     }
 
     private void syncIngredients(Recipe recipe, List<UpdateRecipeIngredientDto> dtos) throws BadRequestException {

@@ -142,6 +142,9 @@ At the root of the project, create a `.env` file and add the following variables
 ```env
 SPRING_PROFILES_ACTIVE=     # Active profile (prod or dev)
 
+# Image Viewing
+API_UPLOAD_BASE_URL=        # Base Url of Images
+
 # Database Configuration
 
 DB_URL=                     # Database connection URL (e.g., jdbc:postgresql://localhost:5432/tastyhub)

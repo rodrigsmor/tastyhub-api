@@ -12,7 +12,10 @@ public class WebStorageConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/uploads/**")
-            .addResourceLocations("file:" + uploadDir + "/");
+        registry.addResourceHandler("/images/**")
+            .addResourceLocations("file:" + uploadDir + (uploadDir.endsWith("/") ? "" : "/"))
+            .setCachePeriod(3600);
     }
+
+
 }
