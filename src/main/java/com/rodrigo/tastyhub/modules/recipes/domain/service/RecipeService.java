@@ -1,13 +1,12 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
-import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.*;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.SummaryRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
+import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.recipes.infrastructure.persistence.RecipeSpecification;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
@@ -27,9 +26,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,13 +68,11 @@ public class RecipeService {
 
         if (recipeDto.hasCurrency()) {
             Currency currency = currencyService.findById(recipeDto.currencyId());
-            recipe.setCurrency(currency);
-            recipe.setEstimatedCost(recipeDto.estimatedCost());
+            recipe.updateMonetaryDetails(recipeDto.estimatedCost(), currency);
         }
 
         if (recipeDto.hasTags()) {
-            List<Tag> tags = tagService.findAllById(recipeDto.tagIds());
-            recipe.setTags(new HashSet<>(tags));
+            this.syncTags(recipe, recipeDto.tagIds());
         }
 
         recipeDto.steps().forEach(stepDto -> {
@@ -143,25 +139,120 @@ public class RecipeService {
 
     @RequiresVerification
     @Transactional
-    public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto body) throws BadRequestException {
+    public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto newData) throws BadRequestException {
         Recipe recipe = findByIdOrThrow(recipeId);
 
-        Optional.ofNullable(body.title()).ifPresent(recipe::setTitle);
-        Optional.ofNullable(body.description()).ifPresent(recipe::setDescription);
+        Optional.ofNullable(newData.title()).ifPresent(recipe::setTitle);
+        Optional.ofNullable(newData.description()).ifPresent(recipe::setDescription);
 
         recipe.updateTiming(recipe.getCookTimeMin(), recipe.getCookTimeMax());
 
         Currency currency = null;
 
-        if (body.currencyId() != null) {
-            currency = currencyService.findById(body.currencyId());
+        if (newData.currencyId() != null) {
+            currency = currencyService.findById(newData.currencyId());
         }
 
-        recipe.updateMonetaryDetails(body.estimatedCost(), currency);
+        recipe.updateMonetaryDetails(newData.estimatedCost(), currency);
 
-        //  se lists forem null, ignorar
-        //  se lists forem arrays vazios, altera
+        Optional.ofNullable(newData.tagIds())
+            .ifPresent(ids -> this.syncTags(recipe, ids));
+
+        if (newData.steps() != null) {
+            this.syncSteps(recipe, newData.steps());
+        };
+
+        if (newData.steps() != null) {
+            this.syncSteps(recipe, newData.steps());
+        }
+
+        if (newData.ingredients() != null) {
+            this.syncIngredients(recipe, newData.ingredients());
+        }
+
         return null;
+    }
+
+    private void syncIngredients(Recipe recipe, List<UpdateRecipeIngredientDto> dtos) throws BadRequestException {
+        if (dtos == null || dtos.isEmpty()) {
+            throw new BadRequestException("Recipe must have at least one ingredient!");
+        }
+
+        Set<Long> dtoIds = dtos.stream()
+            .map(UpdateRecipeIngredientDto::id)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        recipe.getIngredients().removeIf(existing -> !dtoIds.contains(existing.getId()));
+
+        for (var dto : dtos) {
+            if (dto.id() != null) {
+                recipe.getIngredients().stream()
+                    .filter(ri -> ri.getId().equals(dto.id()))
+                    .findFirst()
+                    .ifPresent(ri -> {
+                        ri.setQuantity(dto.quantity());
+                        ri.setUnit(dto.unit());
+                    });
+            } else {
+                Ingredient masterIngredient = ingredientService.findById(dto.ingredientId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Ingredient " + dto.ingredientId() + " not found"));
+
+                RecipeIngredient newRelation = RecipeIngredient.builder()
+                    .ingredient(masterIngredient)
+                    .quantity(dto.quantity())
+                    .unit(dto.unit())
+                    .recipe(recipe)
+                    .build();
+
+                recipe.getIngredients().add(newRelation);
+            }
+        }
+    }
+
+    @Transactional
+    private void syncSteps(Recipe recipe, List<UpdatePreparationStepDto> stepDtos) throws BadRequestException {
+        if (stepDtos.isEmpty()) {
+            throw new BadRequestException("Recipe must have at least one preparation step");
+        }
+
+        Set<Long> dtoIds = stepDtos.stream()
+            .map(UpdatePreparationStepDto::id)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        recipe.getSteps().removeIf(existingStep -> !dtoIds.contains(existingStep.getId()));
+
+        for (var dto : stepDtos) {
+            if (dto.id() != null) {
+                recipe.getSteps().stream()
+                    .filter(s -> s.getId().equals(dto.id()))
+                    .findFirst()
+                    .ifPresent(existingStep -> {
+                        existingStep.setStepNumber(dto.stepNumber());
+                        existingStep.setInstruction(dto.instruction());
+                    });
+            } else {
+                PreparationStep newStep = new PreparationStep();
+                newStep.setStepNumber(dto.stepNumber());
+                newStep.setInstruction(dto.instruction());
+                recipe.addStep(newStep);
+            }
+        }
+    }
+
+    private void syncTags(Recipe recipe, Set<Long> tagIds) {
+        recipe.getTags().clear();
+
+        if (tagIds != null && !tagIds.isEmpty()) {
+            List<Tag> tags = tagService.findAllById(tagIds);
+
+            if (tags.size() != tagIds.size()) {
+                throw new ResourceNotFoundException("One or more provided Tag IDs do not exist.");
+            }
+
+            recipe.getTags().addAll(tags);
+        }
     }
 
     @Transactional
