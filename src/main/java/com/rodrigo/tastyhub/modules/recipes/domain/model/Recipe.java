@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.apache.coyote.BadRequestException;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -109,5 +110,39 @@ public class Recipe {
     public void addStep(PreparationStep step) {
         steps.add(step);
         step.setRecipe(this);
+    }
+
+    public void updateTiming(Integer newMin, Integer newMax) throws BadRequestException {
+        Integer resolvedMin = (newMin != null) ? newMin : this.cookTimeMin;
+        Integer resolvedMax = (newMax != null) ? newMax : this.cookTimeMax;
+
+        if (resolvedMin != null && resolvedMax != null && resolvedMax < resolvedMin) {
+            throw new BadRequestException("Maximum cooking time (%d) cannot be less than minimum (%d)"
+                .formatted(resolvedMax, resolvedMin));
+        }
+
+        this.cookTimeMin = newMin;
+        this.cookTimeMax = newMax;
+    }
+
+    public void updateMonetaryDetails(BigDecimal newCost, Currency newCurrency) throws BadRequestException {
+        if (newCost == null && newCurrency == null) {
+            this.estimatedCost = null;
+            this.currency = null;
+            return;
+        }
+
+        if (newCost == null || newCurrency == null) {
+            throw new BadRequestException(
+                "Inconsistent monetary data: Both estimated cost and currency must be provided together."
+            );
+        }
+
+        if (newCost.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Estimated cost cannot be negative.");
+        }
+
+        this.estimatedCost = newCost;
+        this.currency = newCurrency;
     }
 }
