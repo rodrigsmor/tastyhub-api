@@ -8,8 +8,10 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagin
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,8 +22,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.coyote.BadRequestException;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -161,6 +165,7 @@ public class RecipeController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
 })
     @PutMapping("/{id}")
+
     public ResponseEntity<FullRecipeDto> updateRecipeById(
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRecipeDto body
@@ -168,4 +173,44 @@ public class RecipeController {
         FullRecipeDto response = this.recipeService.updateRecipeById(id, body);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+        summary = "Update cover of Recipe",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Uploads a new cover and updates the alternative text. The previous file will be replaced."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Recipe's cover updated successfully",
+            content = @Content(schema = @Schema(implementation = UserSummaryDto.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid file format or size"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error during file storage")
+    })
+    @PatchMapping(
+        value = "/{id}/cover",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<FullRecipeDto> updateRecipeCover(
+        @PathVariable("id") Long id,
+
+        @Parameter(description = "Profile picture file")
+        @RequestPart(value = "file") MultipartFile file,
+
+        @Parameter(description = "Profile picture file")
+        @RequestPart(value = "alternative_text", required = false) String alternativeText
+    ) throws BadRequestException {
+        Recipe recipe = this.recipeService.updateCoverById(id, file, alternativeText);
+
+        URI uri = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}/cover")
+            .buildAndExpand(recipe.getId())
+            .toUri();
+
+        return ResponseEntity.created(uri).body(RecipeMapper.toFullRecipeDto(recipe));
+    }
+
 }
