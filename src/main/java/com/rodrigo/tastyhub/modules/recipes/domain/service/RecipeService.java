@@ -146,7 +146,13 @@ public class RecipeService {
     @RequiresVerification
     @Transactional
     public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto newData) throws BadRequestException {
+        Long userId = securityService.getCurrentUser().getId();
+
         Recipe recipe = findByIdOrThrow(recipeId);
+
+        if (!recipe.getAuthor().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to update this recipe");
+        }
 
         Optional.ofNullable(newData.title()).ifPresent(recipe::setTitle);
         Optional.ofNullable(newData.description()).ifPresent(recipe::setDescription);
