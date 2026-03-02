@@ -2,6 +2,7 @@ package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.apache.coyote.BadRequestException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
@@ -114,5 +116,54 @@ public class RecipeController {
             .toUri();
 
         return ResponseEntity.created(uri).body(fullRecipeDto);
+    }
+
+    @Operation(
+        summary = "Delete a recipe",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Permanently removes a recipe from the platform. Only the author or an administrator can perform this action."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Recipe deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: You do not have permission to delete this recipe"),
+        @ApiResponse(responseCode = "404", description = "Recipe not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRecipeById(
+            @PathVariable("id") Long id
+    ) throws BadRequestException {
+        this.recipeService.deleteRecipeById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Update an existing recipe",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = """
+            Updates recipe details including titles, descriptions, and nested lists (steps, ingredients, tags). 
+            The 'Orchestrated Sync' pattern is used: any steps or ingredients omitted from the request will be removed, 
+            while new ones will be created.
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Recipe updated successfully",
+            content = @Content(schema = @Schema(implementation = FullRecipeDto.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid input data or validation failed"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: You are not the owner of this recipe"),
+        @ApiResponse(responseCode = "404", description = "Recipe not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+})
+    @PutMapping("/{id}")
+    public ResponseEntity<FullRecipeDto> updateRecipeById(
+        @PathVariable("id") Long id,
+        @RequestBody @Valid UpdateRecipeDto body
+    ) {
+        FullRecipeDto response = this.recipeService.updateRecipeById(id, body);
+        return ResponseEntity.ok(response);
     }
 }
