@@ -1,7 +1,7 @@
 package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesRequest;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
@@ -15,12 +15,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 @Tag(
     name = "Recipes",
@@ -51,12 +51,28 @@ public class RecipeController {
     }
 
     @Operation(
-        summary = "Retrieve a list of recipes",
-        description = ""
+        summary = "List and Filter Recipes",
+        description = """
+            Provides a paginated list of recipes with support for complex filtering.
+            You can filter by tags, categories, rating, cost, and ingredient count.
+            The results can be sorted by relevance, popularity, or date.
+        """
     )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Recipes successfully retrieved",
+            content = @Content(schema = @Schema(implementation = RecipePagination.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid filter parameters provided",
+            content = @Content
+        )
+    })
     @GetMapping
-    public ResponseEntity<RecipePagination> listAllRecipes(
-        @ModelAttribute ListRecipesRequest request
+    public ResponseEntity<RecipePagination> listRecipes(
+        @ParameterObject @Valid ListRecipesQuery request
     ) {
         RecipePagination response = this.recipeService.listRecipes(request);
         return ResponseEntity.ok(response);
