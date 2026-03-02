@@ -52,6 +52,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/auth/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/recipe/**").permitAll()
+                .requestMatchers("/images/**").permitAll()
                 .anyRequest().authenticated()
             ).httpBasic(Customizer.withDefaults());
 
