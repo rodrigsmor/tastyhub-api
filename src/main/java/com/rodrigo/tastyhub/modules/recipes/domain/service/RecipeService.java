@@ -2,6 +2,7 @@ package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.SummaryRecipeDto;
@@ -43,11 +44,9 @@ public class RecipeService {
         return recipeRepository.countByAuthorId(userId);
     }
 
-    public FullRecipeDto getRecipeById(Long recipeId) {
-        Recipe recipe = recipeRepository.findById(recipeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
-
-        return RecipeMapper.toFullRecipeDto(recipe);
+    public Recipe findByIdOrThrow(Long recipeId) {
+        return recipeRepository.findById(recipeId)
+            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
     }
 
     @RequiresVerification
@@ -62,6 +61,7 @@ public class RecipeService {
         Recipe recipe = Recipe
             .builder()
             .title(recipeDto.title())
+            .category(recipeDto.category())
             .description(recipeDto.description())
             .cookTimeMin(recipeDto.cookTimeMin())
             .cookTimeMax(recipeDto.cookTimeMax())
@@ -131,6 +131,40 @@ public class RecipeService {
         return new RecipePagination(recipes, metadata);
     }
 
+    @RequiresVerification
+    @Transactional
+    public void deleteRecipeById(Long id) throws BadRequestException {
+        if (id == null) {
+            throw new BadRequestException("Id was not provided");
+        }
+
+        recipeRepository.deleteById(id);
+    }
+
+    @RequiresVerification
+    @Transactional
+    public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto body) throws BadRequestException {
+        Recipe recipe = findByIdOrThrow(recipeId);
+
+        Optional.ofNullable(body.title()).ifPresent(recipe::setTitle);
+        Optional.ofNullable(body.description()).ifPresent(recipe::setDescription);
+
+        recipe.updateTiming(recipe.getCookTimeMin(), recipe.getCookTimeMax());
+
+        Currency currency = null;
+
+        if (body.currencyId() != null) {
+            currency = currencyService.findById(body.currencyId());
+        }
+
+        recipe.updateMonetaryDetails(body.estimatedCost(), currency);
+
+        //  se lists forem null, ignorar
+        //  se lists forem arrays vazios, altera
+        return null;
+    }
+
+    @Transactional
     private Sort buildSort(RecipeSortBy sortBy, SortDirection direction) {
         String field = switch (sortBy) {
             case TITLE -> "title";
