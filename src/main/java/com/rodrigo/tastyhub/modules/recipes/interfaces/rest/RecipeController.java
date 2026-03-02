@@ -134,7 +134,7 @@ public class RecipeController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRecipeById(
-            @PathVariable("id") Long id
+        @PathVariable("id") Long id
     ) throws BadRequestException {
         this.recipeService.deleteRecipeById(id);
         return ResponseEntity.noContent().build();
