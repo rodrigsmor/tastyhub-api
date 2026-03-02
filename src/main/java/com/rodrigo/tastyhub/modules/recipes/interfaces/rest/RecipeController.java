@@ -1,7 +1,9 @@
 package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -48,10 +51,38 @@ public class RecipeController {
     }
 
     @Operation(
+        summary = "List and Filter Recipes",
+        description = """
+            Provides a paginated list of recipes with support for complex filtering.
+            You can filter by tags, categories, rating, cost, and ingredient count.
+            The results can be sorted by relevance, popularity, or date.
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Recipes successfully retrieved",
+            content = @Content(schema = @Schema(implementation = RecipePagination.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid filter parameters provided",
+            content = @Content
+        )
+    })
+    @GetMapping
+    public ResponseEntity<RecipePagination> listRecipes(
+        @ParameterObject @Valid ListRecipesQuery request
+    ) {
+        RecipePagination response = this.recipeService.listRecipes(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
         summary = "Create a new recipe",
-            security = { @SecurityRequirement(name = "bearerAuth") },
-            description = "Registers a new recipe with its instructions, ingredients, and tags. " +
-                "The user must be verified to perform this action."
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Registers a new recipe with its instructions, ingredients, and tags. " +
+            "The user must be verified to perform this action."
     )
     @ApiResponses({
         @ApiResponse(

@@ -42,6 +42,10 @@ public class Recipe {
     @Column(name = "estimated_cost")
     private BigDecimal estimatedCost;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false)
+    private RecipeCategory category;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "currency_id")
     private Currency currency;
@@ -55,6 +59,10 @@ public class Recipe {
 
     @Column(name = "cover_alt")
     private String coverAlt;
+
+    @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @PrimaryKeyJoinColumn
+    private RecipeStatistics statistics;
 
     @Builder.Default
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
