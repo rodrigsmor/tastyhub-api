@@ -195,6 +195,21 @@ public class User {
         );
     }
 
+    public void addStandardCollections() {
+        UserCollection favorites = UserCollection
+            .builder()
+            .name("Favorite Recipes 🍽")
+            .description("Your personal food book, with your favorite recipes (those dishes that fill you with inspiration and make your mouth water)")
+            .user(this)
+            .isFavorite(true)
+            .isPublic(true)
+            .isFixed(false)
+            .isDeletable(false)
+            .build();
+
+        this.collections.add(favorites);
+    }
+
     public void addRecipe(Recipe recipe) {
         this.recipes.add(recipe);
         recipe.setAuthor(this);
