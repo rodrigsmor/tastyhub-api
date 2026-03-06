@@ -1,6 +1,7 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import lombok.Setter;
 @Table(name = "currencies")
 @Getter
 @Setter
+@AllArgsConstructor
 @NoArgsConstructor
 public class Currency {
     @Id
