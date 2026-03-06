@@ -104,6 +104,7 @@ public class DevDataSeeder implements CommandLineRunner {
         User tanaka = userRepository.findByEmail("tanakayuki@example.com").orElseThrow();
         User thiago = userRepository.findByEmail("sofia.barbose@example.com").orElseThrow();
         User moretti = userRepository.findByEmail("moretti.gio@example.com").orElseThrow();
+        User amarantos = userRepository.findByEmail("amarantos@example.com").orElseThrow();
 
         Currency usd = currencyRepository.save(new Currency(null, "USD", "US Dollar", "$"));
         Currency brl = currencyRepository.save(new Currency(null, "BRL", "Real Brasileiro", "R$"));
@@ -128,6 +129,7 @@ public class DevDataSeeder implements CommandLineRunner {
         createRecipeThree(thiago, brl, tagBrazillian, pork, tortillas);
         createRecipeFour(moretti, usd, pork, tortillas);
         createRecipeFive(tanaka, usd, Set.of(tagJapanese, tagHealthy, tagAsian, tagFishFood));
+        createRecipeSix(amarantos, brl, tagBrazillian, tagHealthy);
     }
 
     private void createRecipeOne(User author, Currency currency, Tag tag, Ingredient pasta, Ingredient egg, Ingredient cheese, Ingredient pork) {
@@ -414,6 +416,64 @@ public class DevDataSeeder implements CommandLineRunner {
         recipeRepository.save(recipe);
     }
 
+    private void createRecipeSix(User user, Currency brl, Tag tagHealthy, Tag tagMeal) {
+        Ingredient abobora = ingredientRepository.save(new Ingredient(null, "Abóbora Cabotiá"));
+        Ingredient leiteCoco = ingredientRepository.save(new Ingredient(null, "Leite de Coco"));
+        Ingredient gengibre = ingredientRepository.save(new Ingredient(null, "Gengibre Fresco"));
+        Ingredient sementeAbobora = ingredientRepository.save(new Ingredient(null, "Sementes de Abóbora"));
+        Ingredient caldoLegumes = ingredientRepository.save(new Ingredient(null, "Caldo de Legumes"));
+
+        Recipe recipe9 = Recipe.builder()
+            .title("Creme de Abóbora com Gengibre")
+            .description("Um creme aveludado, 100% vegano e reconfortante. O gengibre traz um toque picante que acelera o metabolismo e aquece o corpo em dias frios.")
+            .cookTimeMin(30).cookTimeMax(40).estimatedCost(new BigDecimal("25.00"))
+            .category(RecipeCategory.SOUP).currency(brl).author(user)
+            .coverUrl("https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?q=80&w=800")
+            .coverAlt("Tigela de sopa de abóbora laranja vibrante com sementes por cima")
+            .tags(Set.of(tagHealthy)).build();
+
+        recipe9.addIngredient(abobora, new BigDecimal("1"), IngredientUnitEnum.UNIT);
+        recipe9.addIngredient(leiteCoco, new BigDecimal("200"), IngredientUnitEnum.MILLILITER);
+        recipe9.addIngredient(gengibre, new BigDecimal("20"), IngredientUnitEnum.GRAM);
+        recipe9.addIngredient(sementeAbobora, new BigDecimal("1"), IngredientUnitEnum.BUNCH);
+        recipe9.addIngredient(caldoLegumes, new BigDecimal("500"), IngredientUnitEnum.MILLILITER);
+
+        recipe9.addStep(new PreparationStep(null, 1, "Corte a abóbora em cubos e refogue com cebola e o gengibre ralado.", recipe9));
+        recipe9.addStep(new PreparationStep(null, 2, "Adicione o caldo de legumes e cozinhe até que a abóbora esteja bem macia.", recipe9));
+        recipe9.addStep(new PreparationStep(null, 3, "Bata tudo no liquidificador até obter uma textura lisa e retorne para a panela.", recipe9));
+        recipe9.addStep(new PreparationStep(null, 4, "Adicione o leite de coco, acerte o sal e sirva com as sementes tostadas por cima.", recipe9));
+
+        Ingredient fileMignon = ingredientRepository.save(new Ingredient(null, "Filé Mignon"));
+        Ingredient vinhoTinto = ingredientRepository.save(new Ingredient(null, "Vinho Tinto Seco"));
+        Ingredient manteiga = ingredientRepository.save(new Ingredient(null, "Manteiga Sem Sal"));
+        Ingredient alecrim = ingredientRepository.save(new Ingredient(null, "Alecrim Fresco"));
+        Ingredient batataAsterix = ingredientRepository.save(new Ingredient(null, "Batata Asterix"));
+
+        Recipe recipe10 = Recipe.builder()
+            .title("Medalhão ao Molho de Vinho")
+            .description("Medalhões de filé mignon grelhados no ponto perfeito, acompanhados de um redução de vinho tinto artesanal e batatas rústicas ao alecrim.")
+            .cookTimeMin(45).cookTimeMax(60).estimatedCost(new BigDecimal("120.00"))
+            .category(RecipeCategory.MEAL)
+            .currency(brl)
+            .author(user)
+            .coverUrl("https://images.unsplash.com/photo-1546241072-48010ad28abb?q=80&w=800")
+            .coverAlt("Bife suculento com molho escuro e batatas ao lado")
+            .tags(Set.of(tagMeal)).build();
+
+        recipe10.addIngredient(fileMignon, new BigDecimal("500"), IngredientUnitEnum.GRAM);
+        recipe10.addIngredient(vinhoTinto, new BigDecimal("250"), IngredientUnitEnum.MILLILITER);
+        recipe10.addIngredient(manteiga, new BigDecimal("50"), IngredientUnitEnum.GRAM);
+        recipe10.addIngredient(alecrim, new BigDecimal("2"), IngredientUnitEnum.BUNCH);
+        recipe10.addIngredient(batataAsterix, new BigDecimal("3"), IngredientUnitEnum.UNIT);
+
+        recipe10.addStep(new PreparationStep(null, 1, "Tempere a carne e sele os medalhões em uma frigideira bem quente com manteiga.", recipe10));
+        recipe10.addStep(new PreparationStep(null, 2, "Na mesma frigideira, adicione o vinho tinto e deixe reduzir até metade do volume.", recipe10));
+        recipe10.addStep(new PreparationStep(null, 3, "Corte as batatas em gomos e asse com azeite, sal e alecrim até dourarem.", recipe10));
+        recipe10.addStep(new PreparationStep(null, 4, "Finalize o molho com uma colher de manteiga gelada e sirva sobre a carne.", recipe10));
+
+        recipeRepository.saveAll(List.of(recipe9, recipe10));
+    }
+
     private final List<UserSeedData> seedData = List.of(
         new UserSeedData(
             "Liam",
@@ -582,6 +642,18 @@ public class DevDataSeeder implements CommandLineRunner {
             "https://randomuser.me/api/portraits/men/12.jpg",
             "Oktoberfest style wooden table",
             "Klaus holding a large pretzel and a beer"
+        ),
+        new UserSeedData(
+            "Roberta",
+            "Amarantos Carvalho de Santana",
+            "amarantos@example.com",
+            LocalDate.of(1975, 8, 21),
+            "Sonhadora 😴\nApaixonada 🥰\nAmante de Gastronomia 🍽♥️\n💘Sigam para receber receitinhas! 🫶🏻",
+            "+55 89 18821-1921",
+            "https://thumbs.dreamstime.com/b/heart-shaped-pizza-valentine-s-day-vegetables-concept-tasty-healthy-food-love-free-lay-133960748.jpg",
+            "https://static.vecteezy.com/system/resources/thumbnails/054/894/399/small/romantic-couple-under-gently-falling-snowflakes-photo.jpeg",
+            "",
+            ""
         )
     );
 }
