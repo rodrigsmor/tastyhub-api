@@ -28,10 +28,10 @@ public class Recipe {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = 120)
     private String title;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "description", nullable = false, length = 500)
     private String description;
 
     @Column(name = "cook_time_min")
@@ -55,10 +55,10 @@ public class Recipe {
     @JoinColumn(name = "user_id", nullable = false)
     private User author;
 
-    @Column(name = "cover_url")
+    @Column(name = "cover_url", columnDefinition = "TEXT")
     private String coverUrl;
 
-    @Column(name = "cover_alt")
+    @Column(name = "cover_alt", length = 500)
     private String coverAlt;
 
     @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
