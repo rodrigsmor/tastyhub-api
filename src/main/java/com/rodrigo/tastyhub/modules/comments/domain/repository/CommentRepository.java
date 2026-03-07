@@ -13,23 +13,21 @@ import java.util.Map;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long>, JpaSpecificationExecutor<Comment> {
-    @Query("""
-        SELECT
-            COUNT(DISTINCT c.author.id) AS totalUsers,
-            COUNT(c) AS totalReviews,
-            AVG(c.rating) AS averageRating
-        FROM Comment c
-        WHERE c.recipe.id = :recipeId
-    """)
+    @Query(
+        "SELECT " +
+            "COUNT(DISTINCT c.user.id) AS totalUsers, " +
+            "COUNT(c) AS totalReviews, " +
+            "AVG(c.rating) AS averageRating " +
+        "FROM Comment c " +
+        "WHERE c.recipe.id = :recipeId"
+    )
     ReviewStatsProjection getReviewStatsByRecipeId(@Param("recipeId") Long recipeId);
 
-    @Query("""
-        SELECT
-            FLOOR(c.rating) AS ratingValue,
-            COUNT(c) AS count
-        FROM Comment c
-        WHERE c.recipe.id = :recipeId
-        GROUP BY FLOOR(c.rating)
-    """)
+    @Query(
+        "SELECT FLOOR(c.rating) AS ratingValue, COUNT(c) AS count " +
+        "FROM Comment c " +
+        "WHERE c.recipe.id = :recipeId " +
+        "GROUP BY FLOOR(c.rating)"
+    )
     List<Map<String, Object>> getRatingCountBreakdown(@Param("recipeId") Long recipeId);
 }
