@@ -121,7 +121,7 @@ public class User {
     private OnboardingStatus onboardingStatus = OnboardingStatus.PENDING_VERIFICATION;
 
     @Builder.Default
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserCollection> collections = new ArrayList<>();
 
     @Column(name = "onboarding_started_at")
@@ -203,6 +203,8 @@ public class User {
             .user(this)
             .isFavorite(true)
             .isPublic(true)
+            .recipes(new HashSet<>())
+            .articles(new HashSet<>())
             .isFixed(false)
             .isDeletable(false)
             .build();
@@ -212,6 +214,8 @@ public class User {
             .name("To Cook Later 📖🧑🏼‍🍳")
             .description("Your list of recipes that inspire your desire to cook! Those recipes that will be cooked soon!")
             .user(this)
+            .recipes(new HashSet<>())
+            .articles(new HashSet<>())
             .isFavorite(false)
             .isPublic(true)
             .isFixed(true)
@@ -226,7 +230,7 @@ public class User {
         getFavoritesCollection().addRecipe(recipe);
     }
 
-    private UserCollection getFavoritesCollection() {
+    public UserCollection getFavoritesCollection() {
         return this.collections
             .stream()
             .filter(UserCollection::isFavorite)
