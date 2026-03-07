@@ -97,6 +97,13 @@ public class Recipe {
     @UpdateTimestamp
     private OffsetDateTime updatedAt;
 
+    public void incrementFavorites() {
+        if (this.statistics == null) {
+            this.statistics = new RecipeStatistics();
+        }
+        this.statistics.incrementFavoritesCount();
+    }
+
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
         RecipeIngredient recipeIngredient = RecipeIngredient.builder()
             .recipe(this)
@@ -110,6 +117,25 @@ public class Recipe {
     public void addStep(PreparationStep step) {
         steps.add(step);
         step.setRecipe(this);
+    }
+
+    public void addComment(User user, BigDecimal rating, String content) {
+        if (rating == null || rating.compareTo(BigDecimal.ONE) < 0 || rating.compareTo(new BigDecimal("5")) > 0) {
+            throw new IllegalArgumentException("The rating must be between 1 and 5.");
+        }
+
+        Comment comment = Comment.builder()
+            .user(user)
+            .content(content)
+            .rating(rating)
+            .recipe(this)
+            .build();
+
+        this.comments.add(comment);
+
+        if (this.statistics != null) {
+            this.statistics.updateRating(rating);
+        }
     }
 
     public void updateTiming(Integer newMin, Integer newMax) throws BadRequestException {
