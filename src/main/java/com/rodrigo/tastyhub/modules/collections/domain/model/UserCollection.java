@@ -57,7 +57,7 @@ public class UserCollection {
     private boolean isDeletable = true;
 
     @Builder.Default
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "recipe_collections",
         joinColumns = @JoinColumn(name = "collection_id"),
@@ -79,4 +79,10 @@ public class UserCollection {
 
     @UpdateTimestamp
     private OffsetDateTime updatedAt;
+
+    public void addRecipe(Recipe recipe) {
+        if (this.recipes.add(recipe)) {
+            recipe.incrementFavorites();
+        }
+    }
 }

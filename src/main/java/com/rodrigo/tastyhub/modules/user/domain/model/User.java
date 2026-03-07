@@ -121,7 +121,7 @@ public class User {
     private OnboardingStatus onboardingStatus = OnboardingStatus.PENDING_VERIFICATION;
 
     @Builder.Default
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserCollection> collections = new ArrayList<>();
 
     @Column(name = "onboarding_started_at")
@@ -193,6 +193,49 @@ public class User {
         targetUser.getFollowers().removeIf(follow ->
             follow.getFollower().getId().equals(this.id)
         );
+    }
+
+    public void createDefaultCollections() {
+        UserCollection favorites = UserCollection
+            .builder()
+            .name("Favorite Recipes 🍽")
+            .description("Your personal food book, with your favorite recipes (those dishes that fill you with inspiration and make your mouth water)")
+            .user(this)
+            .isFavorite(true)
+            .isPublic(true)
+            .recipes(new HashSet<>())
+            .articles(new HashSet<>())
+            .isFixed(false)
+            .isDeletable(false)
+            .build();
+
+        UserCollection toCookLater = UserCollection
+            .builder()
+            .name("To Cook Later 📖🧑🏼‍🍳")
+            .description("Your list of recipes that inspire your desire to cook! Those recipes that will be cooked soon!")
+            .user(this)
+            .recipes(new HashSet<>())
+            .articles(new HashSet<>())
+            .isFavorite(false)
+            .isPublic(true)
+            .isFixed(true)
+            .isDeletable(false)
+            .build();
+
+        this.collections.add(favorites);
+        this.collections.add(toCookLater);
+    }
+
+    public void addRecipeToFavorites(Recipe recipe) {
+        getFavoritesCollection().addRecipe(recipe);
+    }
+
+    public UserCollection getFavoritesCollection() {
+        return this.collections
+            .stream()
+            .filter(UserCollection::isFavorite)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Favorites collection not found"));
     }
 
     public void addRecipe(Recipe recipe) {
