@@ -1,10 +1,15 @@
 package com.rodrigo.tastyhub.shared.infrastructure.seed;
 
+import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
+import com.rodrigo.tastyhub.modules.collections.domain.repository.UserCollectionRepository;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.CurrencyRepository;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.IngredientRepository;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
+import com.rodrigo.tastyhub.modules.social.domain.model.Follow;
+import com.rodrigo.tastyhub.modules.social.domain.model.FollowId;
+import com.rodrigo.tastyhub.modules.social.domain.repository.FollowRepository;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.user.domain.model.Role;
@@ -21,8 +26,12 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @Profile("dev")
@@ -31,9 +40,12 @@ public class DevDataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TagRepository tagRepository;
+    private final FollowRepository followRepository;
     private final CurrencyRepository currencyRepository;
     private final RecipeRepository recipeRepository;
     private final IngredientRepository ingredientRepository;
+    private final UserCollectionRepository userCollectionRepository;
+    private static final Logger log = LoggerFactory.getLogger(DevDataSeeder.class);
 
     public DevDataSeeder(
         RoleRepository roleRepository,
@@ -41,26 +53,31 @@ public class DevDataSeeder implements CommandLineRunner {
         PasswordEncoder passwordEncoder,
         CurrencyRepository currencyRepository,
         TagRepository tagRepository,
+        FollowRepository followRepository,
         RecipeRepository recipeRepository,
-        IngredientRepository ingredientRepository
+        IngredientRepository ingredientRepository,
+        UserCollectionRepository userCollectionRepository
     ) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.currencyRepository = currencyRepository;
         this.tagRepository = tagRepository;
+        this.followRepository = followRepository;
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
+        this.userCollectionRepository = userCollectionRepository;
     }
-
-// TO-DO  criar relacoes de follows, criar comments nas recipes, criar salvamento das receitas, criar collections com as receitas, atualizar estatisticas das receitas
 
     @Transactional
     @Override
     public void run(String... args) {
         if (userRepository.count() == 0) {
+            log.info("Seeds is Running... 🫣😬");
             seedUsers();
             seedRecipes();
+            seedFollows();
+            log.info("The seeds have been successfully ran! ✅🚀");
         }
     }
 
@@ -83,6 +100,8 @@ public class DevDataSeeder implements CommandLineRunner {
                 .bio(data.bio())
                 .roles(Set.of(role))
                 .phone(data.phone())
+                .following(new HashSet<>())
+                .followers(new HashSet<>())
                 .coverPhotoUrl(data.coverUrl())
                 .profilePictureUrl(data.photoUrl())
                 .coverPhotoUrl(data.coverAlt())
@@ -139,17 +158,66 @@ public class DevDataSeeder implements CommandLineRunner {
         Ingredient pork = ingredientRepository.save(new Ingredient(null, "Pork Shoulder"));
 
         createRecipeOne(liam, usd, tagPasta, pastaIng, eggIng, cheeseIng, porkIng, valentina, ahmed, sofia);
-        createRecipeTwo(olivia, usd, tagBakery);
+        createRecipeTwo(olivia, usd, tagBakery, tanaka, jean, thiago, lari, klaus);
         createRecipeThree(thiago, brl, tagBrazillian, pork, tortillas);
         createRecipeFour(moretti, usd, pork, tortillas);
-        createRecipeFive(tanaka, usd, Set.of(tagJapanese, tagHealthy, tagAsian, tagFishFood));
+        createRecipeFive(tanaka, usd, new HashSet<>(Set.of(tagJapanese, tagHealthy, tagAsian, tagFishFood)));
         createRecipeSix(amarantos, brl, tagBrazillian, tagHealthy);
+    }
+
+    private void seedFollows() {
+        User liam = userRepository.findByEmail("liam.smith@example.com").orElseThrow();
+        User klaus = userRepository.findByEmail("klaus@example.com").orElseThrow();
+        User sofia = userRepository.findByEmail("sofia.barbose@example.com").orElseThrow();
+        User mateo = userRepository.findByEmail("mateo.rodriguez@example.com").orElseThrow();
+        User jean = userRepository.findByEmail("jean-pierre@example.com").orElseThrow();
+        User lari = userRepository.findByEmail("lari.ferreirasantos@example.com").orElseThrow();
+        User valentina = userRepository.findByEmail("valentina-dasilva.rs@example.com").orElseThrow();
+
+        saveFollow(valentina, liam);
+        saveFollow(valentina, lari);
+
+        saveFollow(sofia, lari);
+        saveFollow(sofia, valentina);
+        saveFollow(sofia, liam);
+
+        saveFollow(lari, valentina);
+
+        saveFollow(liam, valentina);
+        saveFollow(liam, lari);
+        saveFollow(liam, mateo);
+        saveFollow(liam, sofia);
+
+        saveFollow(mateo, jean);
+        saveFollow(mateo, sofia);
+
+        saveFollow(jean, mateo);
+        saveFollow(jean, klaus);
+        saveFollow(jean, sofia);
+
+        saveFollow(klaus, valentina);
+        saveFollow(klaus, liam);
+        saveFollow(klaus, lari);
+        saveFollow(klaus, jean);
+        saveFollow(klaus, mateo);
+        saveFollow(klaus, sofia);
+
+        log.info("👯 Follows relations have been sets 👏🏾");
+    }
+
+    private void saveFollow(User follower, User following) {
+        Follow follow = new Follow();
+        follow.setId(new FollowId(follower.getId(), following.getId()));
+        follow.setFollower(follower);
+        follow.setFollowing(following);
+
+        followRepository.save(follow);
     }
 
     private void createRecipeOne(
         User author,
         Currency currency,
-        Tag tag,
+        Tag tagPasta,
         Ingredient pasta,
         Ingredient egg,
         Ingredient cheese,
@@ -171,7 +239,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(author)
             .coverUrl("https://images.unsplash.com/photo-1612874742237-6526221588e3?q=80&w=800")
             .coverAlt("Close up of spaghetti carbonara with pecorino cheese")
-            .tags(Set.of(tag))
+            .tags(new HashSet<>(Set.of(tagPasta)))
             .statistics(statistics)
             .build();
 
@@ -189,10 +257,29 @@ public class DevDataSeeder implements CommandLineRunner {
         recipe.addComment(ahmed, BigDecimal.valueOf(5), "Cursus mi pretium tellus duis convallis tempus leo. Arcu dignissim velit aliquam imperdiet mollis nullam volutpat. Montes nascetur ridiculus mus donec rhoncus eros lobortis. Adipiscing elit quisque faucibus ex sapien vitae pellentesque. 👏🏾🥰");
         recipe.addComment(sofia, BigDecimal.valueOf(4), "itae pellentesque sem placerat in id cursus mi. Euismod quam justo lectus commodo augue arcu dignissim.");
 
-        recipeRepository.save(recipe);
+        Recipe savedRecipe = recipeRepository.save(recipe);
+
+        UserCollection valentinaFavorites = valentina.getFavoritesCollection();
+        UserCollection ahmedFavorites = ahmed.getFavoritesCollection();
+
+        valentinaFavorites.addRecipe(savedRecipe);
+        ahmedFavorites.addRecipe(savedRecipe);
+
+        userCollectionRepository.saveAll(new ArrayList<>(List.of(valentinaFavorites, ahmedFavorites)));
+
+        log.info("1️⃣ First Recipe Created! 📕 ID: " + savedRecipe.getId());
     }
 
-    private void createRecipeTwo(User author, Currency currency, Tag tag) {
+    private void createRecipeTwo(
+        User author,
+        Currency currency,
+        Tag tag,
+        User tanaka,
+        User jean,
+        User thiago,
+        User lari,
+        User klaus
+    ) {
         Ingredient water = ingredientRepository.save(new Ingredient(null, "Water"));
         Ingredient flour = ingredientRepository.save(new Ingredient(null, "Flour"));
         Ingredient salt = ingredientRepository.save(new Ingredient(null, "Salt"));
@@ -211,7 +298,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(author)
             .coverUrl("https://images.unsplash.com/photo-1585478259715-876a6a81b294?q=80&w=800")
             .coverAlt("A loaf of sourdough bread on a wooden board")
-            .tags(Set.of(tag))
+            .tags(new HashSet<>(Set.of()))
             .statistics(statistics)
             .build();
 
@@ -224,8 +311,27 @@ public class DevDataSeeder implements CommandLineRunner {
 
         recipe.addStep(new PreparationStep(null, 1, "Mix flour and water, let it rest for 1 hour (autolyse).", recipe));
         recipe.addStep(new PreparationStep(null, 2, "Add the sourdough starter and salt, then perform stretch and folds every 30 minutes.", recipe));
+        recipe.addStep(new PreparationStep(null, 3, "Tempus leo eu aenean sed diam urna tempor. Nullam volutpat porttitor ullamcorper rutrum gravida cras eleifend.", recipe));
+        recipe.addStep(new PreparationStep(null, 4, "Vitae pellentesque sem placerat in id cursus mi. Euismod quam justo lectus commodo augue arcu dignissim.", recipe));
+        recipe.addStep(new PreparationStep(null, 5, "Natoque penatibus et magnis dis parturient montes nascetur.", recipe));
 
-        recipeRepository.save(recipe);
+        Recipe savedRecipe = recipeRepository.save(recipe);
+
+        UserCollection tanakaFavorites = tanaka.getFavoritesCollection();
+        UserCollection jeanFavorites = jean.getFavoritesCollection();
+        UserCollection thiagoFavorites = thiago.getFavoritesCollection();
+        UserCollection lariFavorites = lari.getFavoritesCollection();
+        UserCollection klausFavorites = klaus.getFavoritesCollection();
+
+        tanakaFavorites.addRecipe(savedRecipe);
+        jeanFavorites.addRecipe(savedRecipe);
+        thiagoFavorites.addRecipe(savedRecipe);
+        lariFavorites.addRecipe(savedRecipe);
+        klausFavorites.addRecipe(savedRecipe);
+
+        userCollectionRepository.saveAll(new ArrayList<>(List.of(tanakaFavorites, jeanFavorites, thiagoFavorites, lariFavorites, klausFavorites)));
+
+        log.info("2️⃣ Second Recipe Created 📗! ID: " + savedRecipe.getId());
     }
 
     private void createRecipeThree(User author, Currency currency, Tag tag, Ingredient pork, Ingredient tortillas) {
@@ -258,7 +364,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(author)
             .coverUrl("https://images.unsplash.com/photo-1534790545184-d62f0980164c?q=80&w=800")
             .coverAlt("Moqueca fumegante em uma panela de barro preta")
-            .tags(Set.of(tag))
+            .tags(new HashSet<>(Set.of(tag)))
             .statistics(statistics1)
             .build();
 
@@ -285,7 +391,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(author)
             .coverUrl("https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?q=80&w=800")
             .coverAlt("Three corn tacos with pork and cilantro")
-            .tags(Set.of(tag))
+            .tags(new HashSet<>(Set.of()))
             .statistics(statistics2)
             .build();
 
@@ -320,7 +426,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .coverUrl("https://tudodelicious.com/wp-content/uploads/2025/03/Tacaca-Paraense.jpeg")
             .coverAlt("")
             .statistics(statistics3)
-            .tags(Set.of(tag))
+            .tags(new HashSet<>(Set.of(tag)))
             .build();
 
         statistics3.setRecipe(recipe3);
@@ -338,6 +444,8 @@ public class DevDataSeeder implements CommandLineRunner {
         List<Recipe> recipes = new ArrayList<>(List.of(recipe, recipe2, recipe3));
 
         recipeRepository.saveAll(recipes);
+
+        log.info("3️⃣ Third Recipe Created! 📘 ID: " + recipes.stream().map(Recipe::getId));
     }
 
     private void createRecipeFour(User author, Currency currency, Ingredient pork, Ingredient tortillas) {
@@ -366,7 +474,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(author)
             .coverUrl("https://www.giallozafferano.com.br/images/86-8639/tacos-rapidos_1200x800.jpg")
             .coverAlt("Three corn tacos with pork and cilantro")
-            .tags(Set.of(tagMexican, tagMeat))
+            .tags(new HashSet<>(Set.of(tagMexican, tagMeat)))
             .statistics(statistics1)
             .build();
 
@@ -390,6 +498,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .category(RecipeCategory.DESSERT)
             .currency(currency)
             .author(author)
+            .tags(new HashSet<>(Set.of()))
             .coverUrl("https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=800")
             .coverAlt("Cheesecake slice topped with raspberries and blueberries")
             .statistics(statistics2)
@@ -414,6 +523,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .currency(currency)
             .author(author)
             .statistics(statistics3)
+            .tags(new HashSet<>(Set.of()))
             .coverUrl("https://images.unsplash.com/photo-1525059696034-476775b8fca8?q=80&w=800")
             .coverAlt("Vegan burger with pulled jackfruit and purple cabbage")
             .build();
@@ -436,7 +546,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .category(RecipeCategory.SNACK)
             .currency(currency)
             .author(author)
-            .tags(Set.of(tagDessert))
+            .tags(new HashSet<>(Set.of(tagDessert)))
             .statistics(statistics4)
             .coverUrl("https://www.cookingclassy.com/wp-content/uploads/2022/05/bolognese-2.jpg")
             .coverAlt("Vegan burger with pulled jackfruit and purple cabbage")
@@ -453,6 +563,8 @@ public class DevDataSeeder implements CommandLineRunner {
         List<Recipe> recipes = new ArrayList<>(List.of(recipe, recipe2, recipe3, recipe4));
 
         recipeRepository.saveAll(recipes);
+
+        log.info("4️⃣ Fourth Recipe Created! 📙 ID: " + recipes.stream().map(Recipe::getId));
     }
 
     private void createRecipeFive(User author, Currency currency, Set<Tag> tags) {
@@ -476,7 +588,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(author)
             .coverUrl("https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=800")
             .coverAlt("A steaming bowl of ramen with pork belly slices")
-            .tags(tags)
+            .tags(new HashSet<>(tags))
             .statistics(statistics)
             .build();
 
@@ -492,7 +604,9 @@ public class DevDataSeeder implements CommandLineRunner {
         recipe.addStep(new PreparationStep(null, 1, "Clean and boil pork bones to remove impurities, then simmer with aromatics for 12 hours.", recipe));
         recipe.addStep(new PreparationStep(null, 2, "Assemble the bowl with noodles, tare (seasoning), the hot broth, and toppings like chashu.", recipe));
 
-        recipeRepository.save(recipe);
+        Recipe savedRecipe = recipeRepository.save(recipe);
+
+        log.info("5️⃣ First Recipe Created! 📔 ID: " + savedRecipe.getId());
     }
 
     private void createRecipeSix(User user, Currency brl, Tag tagHealthy, Tag tagMeal) {
@@ -511,7 +625,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .category(RecipeCategory.SOUP).currency(brl).author(user)
             .coverUrl("https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?q=80&w=800")
             .coverAlt("Tigela de sopa de abóbora laranja vibrante com sementes por cima")
-            .tags(Set.of(tagHealthy))
+            .tags(new HashSet<>(Set.of(tagHealthy)))
             .statistics(statistics9)
             .build();
 
@@ -545,7 +659,7 @@ public class DevDataSeeder implements CommandLineRunner {
             .author(user)
             .coverUrl("https://images.unsplash.com/photo-1546241072-48010ad28abb?q=80&w=800")
             .coverAlt("Bife suculento com molho escuro e batatas ao lado")
-            .tags(Set.of(tagMeal))
+            .tags(new HashSet<>(Set.of(tagMeal)))
             .statistics(statistics10)
             .build();
 
@@ -563,6 +677,9 @@ public class DevDataSeeder implements CommandLineRunner {
         recipe10.addStep(new PreparationStep(null, 4, "Finalize o molho com uma colher de manteiga gelada e sirva sobre a carne.", recipe10));
 
         recipeRepository.saveAll(List.of(recipe9, recipe10));
+
+        log.info("6️⃣ Six Recipe Created! 📚 ID: " + recipe10.getId() + "," + recipe10.getId());
+
     }
 
     private final List<UserSeedData> seedData = List.of(
