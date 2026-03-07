@@ -231,9 +231,8 @@ public class RecipeController {
         @ApiResponse(responseCode = "403", description = "Forbidden: You are not the owner of this recipe"),
         @ApiResponse(responseCode = "404", description = "Recipe not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
-})
+    })
     @PutMapping("/{id}")
-
     public ResponseEntity<FullRecipeDto> updateRecipeById(
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRecipeDto body
