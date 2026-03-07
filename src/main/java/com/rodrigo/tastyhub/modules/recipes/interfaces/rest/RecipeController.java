@@ -13,13 +13,14 @@ import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import org.apache.coyote.BadRequestException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
@@ -32,7 +33,8 @@ import java.net.URI;
 
 @Tag(
     name = "Recipes",
-    description = ""
+    description = "Recipe management routes. Here, you can create, update, list, read, and delete recipes." +
+        "Read routes are hybrid, while write routes are mandatory private (requiring JWT authentication and authorization to perform these writes)."
 )
 @RestController
 @RequestMapping("/api/recipe")
@@ -49,11 +51,65 @@ public class RecipeController {
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Recipe details retrieved successfully"),
-        @ApiResponse(responseCode = "404", description = "Recipe not found with the provided ID"),
-        @ApiResponse(responseCode = "500", description = "An unexpected error occurred while processing the request"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Recipe ID was not provided or is a negative number",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "The recipe ID must be a positive number",
+                          "status": 400,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Recipe not found with the provided ID",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                    value = """
+                        {
+                          "message": "Recipe not found with the provided ID",
+                          "status": 404,
+                          "timestamp": "2026-03-07T12:05:00"
+                        }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "An unexpected error occurred while processing the request",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "An unexpected error occurred while processing the request",
+                          "status": 500,
+                          "timestamp": "2026-03-12T12:30:00"
+                        }
+                    """
+                )
+            )
+        ),
     })
     @GetMapping("/{id}")
-    public ResponseEntity<FullRecipeDto> getRecipeById(@PathVariable("id") Long id) {
+    public ResponseEntity<FullRecipeDto> getRecipeById(
+        @Parameter(description = "ID of the recipe to retrieve", required = true, example = "1")
+        @PathVariable("id")
+        @Min(value = 1, message = "The recipe ID must be a positive number")
+        Long id
+    ) {
         Recipe response = this.recipeService.findByIdOrThrow(id);
         return ResponseEntity.ok(RecipeMapper.toFullRecipeDto(response));
     }
@@ -75,7 +131,19 @@ public class RecipeController {
         @ApiResponse(
             responseCode = "400",
             description = "Invalid filter parameters provided",
-            content = @Content
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                    {
+                      "message": "Invalid filter parameters provided",
+                      "status": 400,
+                      "timestamp": "2026-03-12T12:30:00"
+                    }
+                    """
+                )
+            )
         )
     })
     @GetMapping
@@ -199,7 +267,7 @@ public class RecipeController {
         @Parameter(description = "Profile picture file")
         @RequestPart(value = "file") MultipartFile file,
 
-        @Parameter(description = "Profile picture file")
+        @Parameter(description = "Profile picture alternative text")
         @RequestPart(value = "alternative_text", required = false) String alternativeText
     ) throws BadRequestException {
         Recipe recipe = this.recipeService.updateCoverById(id, file, alternativeText);
@@ -212,5 +280,4 @@ public class RecipeController {
 
         return ResponseEntity.created(uri).body(RecipeMapper.toFullRecipeDto(recipe));
     }
-
 }
