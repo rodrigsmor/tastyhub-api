@@ -3,6 +3,8 @@ package com.rodrigo.tastyhub.modules.recipes.domain.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,4 +36,14 @@ public class RecipeStatistics {
     @Builder.Default
     @Column(name = "average_rating", nullable = false)
     private Double averageRating = 0.0;
+
+    public void updateRating(BigDecimal newRating) {
+        this.reviewsCount++;
+        this.totalRatingSum += newRating.intValue();
+        this.averageRating = (double) this.totalRatingSum / this.reviewsCount;
+    }
+
+    public void incrementFavoritesCount() {
+        this.favoritesCount++;
+    }
 }
