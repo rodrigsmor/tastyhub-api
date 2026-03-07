@@ -59,7 +59,7 @@ public class UserCollection {
     @Builder.Default
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-        name = "collection_recipes",
+        name = "recipe_collections",
         joinColumns = @JoinColumn(name = "collection_id"),
         inverseJoinColumns = @JoinColumn(name = "recipe_id")
     )
