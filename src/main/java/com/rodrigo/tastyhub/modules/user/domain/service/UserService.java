@@ -59,7 +59,7 @@ public class UserService {
         Role defaultRole = roleService.getDefaultRole();
         user.setRoles(new HashSet<>(Set.of(defaultRole)));
 
-        user.addStandardCollections();
+        user.createDefaultCollections();
 
         UserSettings settings = new UserSettings();
 
