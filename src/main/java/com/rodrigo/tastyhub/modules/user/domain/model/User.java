@@ -195,7 +195,7 @@ public class User {
         );
     }
 
-    public void addStandardCollections() {
+    public void createDefaultCollections() {
         UserCollection favorites = UserCollection
             .builder()
             .name("Favorite Recipes 🍽")
@@ -207,7 +207,31 @@ public class User {
             .isDeletable(false)
             .build();
 
+        UserCollection toCookLater = UserCollection
+            .builder()
+            .name("To Cook Later 📖🧑🏼‍🍳")
+            .description("Your list of recipes that inspire your desire to cook! Those recipes that will be cooked soon!")
+            .user(this)
+            .isFavorite(false)
+            .isPublic(true)
+            .isFixed(true)
+            .isDeletable(false)
+            .build();
+
         this.collections.add(favorites);
+        this.collections.add(toCookLater);
+    }
+
+    public void addRecipeToFavorites(Recipe recipe) {
+        getFavoritesCollection().addRecipe(recipe);
+    }
+
+    private UserCollection getFavoritesCollection() {
+        return this.collections
+            .stream()
+            .filter(UserCollection::isFavorite)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Favorites collection not found"));
     }
 
     public void addRecipe(Recipe recipe) {
