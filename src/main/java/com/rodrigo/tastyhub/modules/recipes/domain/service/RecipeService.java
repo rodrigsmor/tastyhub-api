@@ -11,20 +11,18 @@ import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.recipes.infrastructure.persistence.RecipeSpecification;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
-import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
-import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -56,9 +54,9 @@ public class RecipeService {
 
     @RequiresVerification
     @Transactional
-    public FullRecipeDto createRecipe(CreateRecipeDto recipeDto) throws BadRequestException {
+    public FullRecipeDto createRecipe(CreateRecipeDto recipeDto) {
         if (!recipeDto.hasSteps()) {
-            throw new BadRequestException("Recipe must have at least one step");
+            throw new DomainException("Recipe must have at least one step");
         }
 
         User user = this.securityService.getCurrentUser();
@@ -149,7 +147,7 @@ public class RecipeService {
 
     @RequiresVerification
     @Transactional
-    public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto newData) throws BadRequestException {
+    public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto newData) {
         Long userId = securityService.getCurrentUser().getId();
 
         Recipe recipe = findByIdOrThrow(recipeId);
@@ -186,7 +184,7 @@ public class RecipeService {
             this.syncIngredients(recipe, newData.ingredients());
         }
 
-        return null;
+        return RecipeMapper.toFullRecipeDto(recipeRepository.save(recipe));
     }
 
     @FileCleanup
@@ -216,35 +214,35 @@ public class RecipeService {
         return recipe;
     }
 
-    private void syncIngredients(Recipe recipe, List<UpdateRecipeIngredientDto> dtos) throws BadRequestException {
-        if (dtos == null || dtos.isEmpty()) {
-            throw new BadRequestException("Recipe must have at least one ingredient!");
+    private void syncIngredients(Recipe recipe, List<UpdateRecipeIngredientDto> ingredients) {
+        if (ingredients == null || ingredients.isEmpty()) {
+            throw new DomainException("Recipe must have at least one ingredient!");
         }
 
-        Set<Long> dtoIds = dtos.stream()
+        Set<Long> ingredientIds = ingredients.stream()
             .map(UpdateRecipeIngredientDto::id)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-        recipe.getIngredients().removeIf(existing -> !dtoIds.contains(existing.getId()));
+        recipe.getIngredients().removeIf(existing -> !ingredientIds.contains(existing.getId()));
 
-        for (var dto : dtos) {
-            if (dto.id() != null) {
+        for (var ingredient : ingredients) {
+            if (ingredient.id() != null) {
                 recipe.getIngredients().stream()
-                    .filter(ri -> ri.getId().equals(dto.id()))
+                    .filter(ri -> ri.getId().equals(ingredient.id()))
                     .findFirst()
                     .ifPresent(ri -> {
-                        ri.setQuantity(dto.quantity());
-                        ri.setUnit(dto.unit());
+                        ri.setQuantity(ingredient.quantity());
+                        ri.setUnit(ingredient.unit());
                     });
             } else {
-                Ingredient masterIngredient = ingredientService.findById(dto.ingredientId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Ingredient " + dto.ingredientId() + " not found"));
+                Ingredient masterIngredient = ingredientService.findById(ingredient.ingredientId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Ingredient " + ingredient.ingredientId() + " not found"));
 
                 RecipeIngredient newRelation = RecipeIngredient.builder()
                     .ingredient(masterIngredient)
-                    .quantity(dto.quantity())
-                    .unit(dto.unit())
+                    .quantity(ingredient.quantity())
+                    .unit(ingredient.unit())
                     .recipe(recipe)
                     .build();
 
@@ -254,9 +252,9 @@ public class RecipeService {
     }
 
     @Transactional
-    private void syncSteps(Recipe recipe, List<UpdatePreparationStepDto> stepDtos) throws BadRequestException {
+    private void syncSteps(Recipe recipe, List<UpdatePreparationStepDto> stepDtos) {
         if (stepDtos.isEmpty()) {
-            throw new BadRequestException("Recipe must have at least one preparation step");
+            throw new DomainException("Recipe must have at least one preparation step");
         }
 
         Set<Long> dtoIds = stepDtos.stream()

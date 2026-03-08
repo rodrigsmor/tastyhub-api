@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import org.apache.coyote.BadRequestException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -180,7 +179,7 @@ public class RecipeController {
     @PostMapping
     public ResponseEntity<FullRecipeDto> createRecipe(
         @RequestBody @Valid CreateRecipeDto recipeDto
-    ) throws BadRequestException {
+    ) {
         FullRecipeDto fullRecipeDto = this.recipeService.createRecipe(recipeDto);
 
         URI uri = ServletUriComponentsBuilder
@@ -207,7 +206,7 @@ public class RecipeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRecipeById(
         @PathVariable("id") Long id
-    ) throws BadRequestException {
+    ) {
         this.recipeService.deleteRecipeById(id);
         return ResponseEntity.noContent().build();
     }
@@ -236,7 +235,7 @@ public class RecipeController {
     public ResponseEntity<FullRecipeDto> updateRecipeById(
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRecipeDto body
-    ) throws BadRequestException {
+    ) {
         FullRecipeDto response = this.recipeService.updateRecipeById(id, body);
         return ResponseEntity.ok(response);
     }
@@ -268,7 +267,7 @@ public class RecipeController {
 
         @Parameter(description = "Profile picture alternative text")
         @RequestPart(value = "alternative_text", required = false) String alternativeText
-    ) throws BadRequestException {
+    ) {
         Recipe recipe = this.recipeService.updateCoverById(id, file, alternativeText);
 
         URI uri = ServletUriComponentsBuilder

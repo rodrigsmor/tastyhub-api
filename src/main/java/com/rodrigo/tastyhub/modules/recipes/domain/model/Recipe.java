@@ -3,9 +3,9 @@ package com.rodrigo.tastyhub.modules.recipes.domain.model;
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.coyote.BadRequestException;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -138,12 +138,12 @@ public class Recipe {
         }
     }
 
-    public void updateTiming(Integer newMin, Integer newMax) throws BadRequestException {
+    public void updateTiming(Integer newMin, Integer newMax) {
         Integer resolvedMin = (newMin != null) ? newMin : this.cookTimeMin;
         Integer resolvedMax = (newMax != null) ? newMax : this.cookTimeMax;
 
         if (resolvedMin != null && resolvedMax != null && resolvedMax < resolvedMin) {
-            throw new BadRequestException("Maximum cooking time (%d) cannot be less than minimum (%d)"
+            throw new DomainException("Maximum cooking time (%d) cannot be less than minimum (%d)"
                 .formatted(resolvedMax, resolvedMin));
         }
 
@@ -151,7 +151,7 @@ public class Recipe {
         this.cookTimeMax = newMax;
     }
 
-    public void updateMonetaryDetails(BigDecimal newCost, Currency newCurrency) throws BadRequestException {
+    public void updateMonetaryDetails(BigDecimal newCost, Currency newCurrency) {
         if (newCost == null && newCurrency == null) {
             this.estimatedCost = null;
             this.currency = null;
@@ -159,13 +159,13 @@ public class Recipe {
         }
 
         if (newCost == null || newCurrency == null) {
-            throw new BadRequestException(
+            throw new DomainException(
                 "Inconsistent monetary data: Both estimated cost and currency must be provided together."
             );
         }
 
         if (newCost.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BadRequestException("Estimated cost cannot be negative.");
+            throw new DomainException("Estimated cost cannot be negative.");
         }
 
         this.estimatedCost = newCost;
