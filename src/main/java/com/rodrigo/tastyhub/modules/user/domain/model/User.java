@@ -241,20 +241,11 @@ public class User {
         this.collections.add(toCookLater);
     }
 
-    public void addRecipeToFavorites(Recipe recipe) {
-        getFavoritesCollection().addRecipe(recipe);
-    }
-
     public UserCollection getFavoritesCollection() {
         return this.collections
             .stream()
             .filter(UserCollection::isFavorite)
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Favorites collection not found"));
-    }
-
-    public void addRecipe(Recipe recipe) {
-        this.recipes.add(recipe);
-        recipe.setAuthor(this);
     }
 }
