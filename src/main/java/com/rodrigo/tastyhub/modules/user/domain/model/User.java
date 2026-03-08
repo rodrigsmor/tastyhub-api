@@ -6,12 +6,14 @@ import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
 import com.rodrigo.tastyhub.modules.social.domain.model.Follow;
 import com.rodrigo.tastyhub.modules.social.domain.model.FollowId;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -42,7 +44,7 @@ public class User {
     @Column(unique = true, length = 50)
     private String phone;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(nullable = false, unique = true, length = 92)
     private String username;
 
     @Column(length = 280)
@@ -137,6 +139,19 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public void setupPassword(String rawPassword, PasswordEncoder encoder) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new DomainException("Password cannot be empty");
+        }
+        this.password = encoder.encode(rawPassword);
+    }
+
+    public void initializeSettings() {
+        UserSettings settings = new UserSettings();
+        settings.setUser(this);
+        this.settings = settings;
+    }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.roles.stream()

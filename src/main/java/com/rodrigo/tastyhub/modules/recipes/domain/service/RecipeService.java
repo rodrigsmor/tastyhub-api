@@ -114,8 +114,6 @@ public class RecipeService {
             pageable
         );
 
-        System.out.println(page);
-
         List<SummaryRecipeDto> recipes = page.getContent()
             .stream()
             .map(RecipeMapper::toSummaryDto)
