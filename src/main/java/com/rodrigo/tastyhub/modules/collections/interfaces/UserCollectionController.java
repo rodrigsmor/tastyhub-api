@@ -1,18 +1,22 @@
 package com.rodrigo.tastyhub.modules.collections.interfaces;
 
-import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
+import com.rodrigo.tastyhub.modules.collections.application.dto.request.UserCollectionRequest;
+import com.rodrigo.tastyhub.modules.collections.application.dto.response.UserCollectionResponseDto;
 import com.rodrigo.tastyhub.modules.collections.domain.service.UserCollectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 @Tag(
     name = "User Collections",
@@ -25,6 +29,35 @@ public class UserCollectionController {
 
     public UserCollectionController(UserCollectionService collectionService) {
         this.collectionService = collectionService;
+    }
+
+    @Operation(
+        summary = "Create a new collection",
+        description = "Creates a collection with an optional cover image. Sent as multipart/form-data."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Collection created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid data provided")
+    })
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserCollectionResponseDto> createCollection(
+        @Valid @ModelAttribute UserCollectionRequest newData,
+
+        @Parameter(description = "Cover image file")
+        @RequestPart(value = "cover", required = false) MultipartFile file,
+
+        @Parameter(description = "Alternative text for accessibility")
+        @RequestPart(value = "alternative_text", required = false) String alternativeText
+    ) {
+        UserCollectionResponseDto response = collectionService.createCollection(newData, file, alternativeText);
+
+        URI uri = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(response.id())
+            .toUri();
+
+        return ResponseEntity.created(uri).body(response);
     }
 
     @Operation(

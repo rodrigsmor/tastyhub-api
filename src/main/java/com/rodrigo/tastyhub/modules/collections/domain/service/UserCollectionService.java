@@ -1,6 +1,9 @@
 package com.rodrigo.tastyhub.modules.collections.domain.service;
 
 import com.rodrigo.tastyhub.modules.collections.application.dto.request.UserCollectionRequest;
+import com.rodrigo.tastyhub.modules.collections.application.dto.response.CollectionCounts;
+import com.rodrigo.tastyhub.modules.collections.application.dto.response.UserCollectionResponseDto;
+import com.rodrigo.tastyhub.modules.collections.application.mapper.UserCollectionMapper;
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.collections.domain.repository.UserCollectionRepository;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
@@ -29,7 +32,7 @@ public class UserCollectionService {
     private final UserCollectionRepository collectionRepository;
 
     @RequiresVerification
-    public UserCollection createCollectionByUserId(UserCollectionRequest newData, MultipartFile file, String altText) {
+    public UserCollectionResponseDto createCollection(UserCollectionRequest newData, MultipartFile file, String altText) {
         User user = securityService.getCurrentUserOptional()
             .orElseThrow(() -> new UnauthorizedException("You must be logged in"));
 
@@ -50,7 +53,7 @@ public class UserCollectionService {
             collection.setCoverAlt(altText);
         });
 
-        return collectionRepository.save(collection);
+        return generateResponse(collectionRepository.save(collection));
     }
 
     @Retryable(
@@ -59,15 +62,19 @@ public class UserCollectionService {
         backoff = @Backoff(delay = 500)
     )
     @Transactional
-    public UserCollection favoriteRecipe(Long recipeId) {
+    public void favoriteRecipe(Long recipeId) {
         User user = securityService.getCurrentUser();
         Recipe recipe = recipeService.findByIdOrThrow(recipeId);
 
         UserCollection favoritesCollection = user.getFavoritesCollection();
+
+        if (favoritesCollection == null) {
+            throw new IllegalStateException("User favorites collection not initialized");
+        }
 
         favoritesCollection.addRecipe(recipe);
 
-        return collectionRepository.save(favoritesCollection);
+        collectionRepository.save(favoritesCollection);
     }
 
     @Retryable(
@@ -76,14 +83,25 @@ public class UserCollectionService {
         backoff = @Backoff(delay = 500)
     )
     @Transactional
-    public UserCollection unfavoriteRecipe(Long recipeId) {
+    public void unfavoriteRecipe(Long recipeId) {
         User user = securityService.getCurrentUser();
         Recipe recipe = recipeService.findByIdOrThrow(recipeId);
 
         UserCollection favoritesCollection = user.getFavoritesCollection();
 
+        if (favoritesCollection == null) {
+            throw new IllegalStateException("User favorites collection not initialized");
+        }
+
         favoritesCollection.removeRecipe(recipe);
 
-        return collectionRepository.save(favoritesCollection);
+        collectionRepository.save(favoritesCollection);
+    }
+
+    private UserCollectionResponseDto generateResponse(UserCollection collection) {
+        CollectionCounts counts = collectionRepository.getCollectionCountsById(collection.getId())
+                .orElse(new CollectionCounts(0, 0));
+
+        return UserCollectionMapper.toDto(collection, counts);
     }
 }
