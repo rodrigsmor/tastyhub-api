@@ -3,6 +3,7 @@ package com.rodrigo.tastyhub.modules.collections.application.mapper;
 import com.rodrigo.tastyhub.modules.collections.application.dto.response.CollectionCounts;
 import com.rodrigo.tastyhub.modules.collections.application.dto.response.UserCollectionResponseDto;
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
+import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,8 @@ public class UserCollectionMapper {
             recipes,
             articles,
             collection.getCreatedAt(),
-            collection.getUpdatedAt()
+            collection.getUpdatedAt(),
+            UserMapper.toSummary(collection.getUser())
         );
     }
 }

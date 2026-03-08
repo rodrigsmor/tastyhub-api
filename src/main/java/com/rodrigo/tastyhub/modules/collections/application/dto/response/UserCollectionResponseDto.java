@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.collections.application.dto.response;
 
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.OffsetDateTime;
@@ -46,5 +47,7 @@ public record UserCollectionResponseDto(
     OffsetDateTime createdAt,
 
     @Schema(description = "Timestamp of the last update to the collection metadata or items")
-    OffsetDateTime updatedAt
+    OffsetDateTime updatedAt,
+
+    UserSummaryDto owner
 ) {}
