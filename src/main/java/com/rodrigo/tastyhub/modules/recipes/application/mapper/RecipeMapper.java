@@ -25,14 +25,15 @@ public final class RecipeMapper {
         return new SummaryRecipeDto(
             recipe.getId(),
             recipe.getTitle(),
-            0,
-            recipe.getCookTimeMax() != null ? recipe.getCookTimeMax() : 0,
             recipe.getCookTimeMin() != null ? recipe.getCookTimeMin() : 0,
-            0,
-            0,
+            recipe.getCookTimeMax() != null ? recipe.getCookTimeMax() : 0,
             storageService.generateImageUrl(recipe.getCoverUrl()),
             recipe.getCoverAlt(),
-            UserMapper.toSummary(recipe.getAuthor())
+            UserMapper.toSummary(recipe.getAuthor()),
+            recipe.getIngredients().size(),
+            recipe.getStatistics().getAverageRating(),
+            recipe.getStatistics().getFavoritesCount(),
+            recipe.getStatistics().getReviewsCount()
         );
     }
 
@@ -60,10 +61,10 @@ public final class RecipeMapper {
                 .map(PreparationStepMapper::toPreparationStepDto)
                 .toList(),
             recipe.getTags().stream().map(TagMapper::toTagDto).toList(),
-            0,
-            0,
-            0,
-            0,
+            recipe.getStatistics().getFavoritesCount(),
+            recipe.getIngredients().size(),
+            recipe.getStatistics().getAverageRating(),
+            recipe.getStatistics().getReviewsCount(),
             recipe.getCreatedAt(),
             recipe.getUpdatedAt()
         );
