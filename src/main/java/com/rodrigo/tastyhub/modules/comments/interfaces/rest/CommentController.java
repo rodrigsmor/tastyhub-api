@@ -7,7 +7,6 @@ import com.rodrigo.tastyhub.modules.comments.application.mapper.CommentMapper;
 import com.rodrigo.tastyhub.modules.comments.domain.CommentService;
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.comments.domain.model.CommentSortBy;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import io.swagger.v3.oas.annotations.Operation;
@@ -112,11 +111,11 @@ public class CommentController {
         Long recipeId,
 
         @Parameter(description = "Page number (0-indexed)")
-        @RequestParam(value = "0", defaultValue = "0")
+        @RequestParam(value = "page", defaultValue = "0")
         Integer page,
 
         @Parameter(description = "Number of items per page")
-        @RequestParam(value = "10", required = false, defaultValue = "10")
+        @RequestParam(value = "size", required = false, defaultValue = "10")
         Integer size,
 
         @Parameter(description = "Field to sort by")
