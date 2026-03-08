@@ -71,6 +71,7 @@ public class ImageStorageService {
 
     public String generateImageUrl(String filename) {
         if (filename == null || filename.isBlank()) return null;
+        else if (filename.startsWith("http")) return filename;
 
         return String.format("%s/%s", baseUrl, filename);
     }
