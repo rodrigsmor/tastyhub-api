@@ -37,6 +37,9 @@ public class SecurityService {
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
-        return Optional.of((User) auth.getPrincipal());
+
+        String email = auth.getName();
+
+        return userRepository.findByEmail(email);
     }
 }
