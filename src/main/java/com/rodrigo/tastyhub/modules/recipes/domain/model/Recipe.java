@@ -61,7 +61,7 @@ public class Recipe {
     @Column(name = "cover_alt", length = 500)
     private String coverAlt;
 
-    @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @PrimaryKeyJoinColumn
     private RecipeStatistics statistics;
 
@@ -104,6 +104,13 @@ public class Recipe {
         this.statistics.incrementFavoritesCount();
     }
 
+    public void decrementFavorites() {
+        if (this.statistics == null) {
+            this.statistics = new RecipeStatistics();
+        }
+        this.statistics.decrementFavoritesCount();
+    }
+
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
         RecipeIngredient recipeIngredient = RecipeIngredient.builder()
             .recipe(this)
@@ -133,8 +140,12 @@ public class Recipe {
 
         this.comments.add(comment);
 
+        updateStatisticRating(rating);
+    }
+
+    public void updateStatisticRating(BigDecimal rating) {
         if (this.statistics != null) {
-            this.statistics.updateRating(rating);
+            this.statistics.incrementRating(rating);
         }
     }
 
