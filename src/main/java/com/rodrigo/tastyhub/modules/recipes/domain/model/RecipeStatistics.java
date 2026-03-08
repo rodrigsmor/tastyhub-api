@@ -37,13 +37,28 @@ public class RecipeStatistics {
     @Column(name = "average_rating", nullable = false)
     private Double averageRating = 0.0;
 
-    public void updateRating(BigDecimal newRating) {
+    @Version
+    private Long version;
+
+    public void incrementRating(BigDecimal newRating) {
         this.reviewsCount++;
         this.totalRatingSum += newRating.intValue();
         this.averageRating = (double) this.totalRatingSum / this.reviewsCount;
     }
 
+    public void decrementRating(BigDecimal newRating) {
+        this.reviewsCount--;
+        this.totalRatingSum -= newRating.intValue();
+        this.averageRating = (double) this.totalRatingSum / this.reviewsCount;
+    }
+
     public void incrementFavoritesCount() {
         this.favoritesCount++;
+    }
+
+    public void decrementFavoritesCount() {
+        if (this.favoritesCount > 0) {
+            this.favoritesCount--;
+        }
     }
 }

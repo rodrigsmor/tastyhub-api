@@ -282,6 +282,7 @@ public class RecipeService {
         }
     }
 
+    @Transactional
     private void syncTags(Recipe recipe, Set<Long> tagIds) {
         recipe.getTags().clear();
 
