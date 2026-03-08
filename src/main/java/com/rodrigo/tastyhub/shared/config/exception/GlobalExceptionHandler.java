@@ -146,7 +146,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DomainException.class)
-    public ResponseEntity<ErrorResponseDto> handleDomainException(ServletRequestBindingException ex) {
+    public ResponseEntity<ErrorResponseDto> handleDomainException(DomainException ex) {
         ErrorResponseDto error = new ErrorResponseDto(
             ex.getMessage(),
             HttpStatus.UNAUTHORIZED.value(),
