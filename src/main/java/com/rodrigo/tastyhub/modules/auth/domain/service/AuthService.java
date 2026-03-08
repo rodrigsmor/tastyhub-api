@@ -66,7 +66,7 @@ public class AuthService {
     }
 
     @Transactional
-    public ResponseEntity<SignupResponseDto> signup(SignupRequestDto signupDto) throws BadRequestException {
+    public ResponseEntity<SignupResponseDto> signup(SignupRequestDto signupDto) {
         User user = userService.createNewUser(signupDto);
 
         String verificationToken = createVerificationToken(user);
