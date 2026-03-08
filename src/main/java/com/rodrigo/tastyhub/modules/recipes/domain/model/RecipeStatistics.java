@@ -38,7 +38,7 @@ public class RecipeStatistics {
     private Double averageRating = 0.0;
 
     @Version
-    private Long version;
+    private Long version = 0L;
 
     public void incrementRating(BigDecimal newRating) {
         this.reviewsCount++;
