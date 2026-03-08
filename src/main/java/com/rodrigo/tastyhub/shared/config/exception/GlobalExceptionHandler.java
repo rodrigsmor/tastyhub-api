@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -128,6 +129,19 @@ public class GlobalExceptionHandler {
             HttpStatus.UNAUTHORIZED.value(),
             LocalDateTime.now()
         );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponseDto> handleMethodValidation(HandlerMethodValidationException ex) {
+        String errorMessage = ex.getDetailMessageArguments()[0].toString();
+
+        ErrorResponseDto error = new ErrorResponseDto(
+            errorMessage,
+            HttpStatus.BAD_REQUEST.value(),
+            LocalDateTime.now()
+        );
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
