@@ -38,6 +38,7 @@ public class RecipeStatistics {
     private Double averageRating = 0.0;
 
     @Version
+    @Builder.Default
     private Long version = 0L;
 
     public void incrementRating(BigDecimal newRating) {

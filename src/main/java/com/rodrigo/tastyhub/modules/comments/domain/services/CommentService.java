@@ -1,4 +1,4 @@
-package com.rodrigo.tastyhub.modules.comments.domain;
+package com.rodrigo.tastyhub.modules.comments.domain.services;
 
 import com.rodrigo.tastyhub.modules.comments.application.dto.request.ReviewRequestDto;
 import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewPagination;
