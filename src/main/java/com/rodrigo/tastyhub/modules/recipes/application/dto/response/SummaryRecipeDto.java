@@ -11,20 +11,11 @@ public record SummaryRecipeDto(
     @Schema(description = "Title of the recipe", example = "Classic Italian Lasagna")
     String title,
 
-    @Schema(description = "Total number of users who favorited this recipe", example = "1250")
-    long favoritesCount,
-
     @Schema(description = "Minimum estimated cooking time in minutes", example = "30")
     int minCookTime,
 
     @Schema(description = "Maximum estimated cooking time in minutes", example = "45")
     int maxCookTime,
-
-    @Schema(description = "Total number of ingredients required", example = "12")
-    long ingredientsCount,
-
-    @Schema(description = "Average user rating from 0.0 to 5.0", example = "4.8")
-    double averageRating,
 
     @Schema(description = "URL of the recipe's main cover image",
             example = "https://cdn.tastyhub.com/images/recipes/lasagna.jpg")
@@ -35,5 +26,17 @@ public record SummaryRecipeDto(
     String coverAlt,
 
     @Schema(description = "Simplified information about the recipe creator")
-    UserSummaryDto user
+    UserSummaryDto user,
+
+    @Schema(description = "Total number of ingredients required", example = "12")
+    long ingredientsCount,
+
+    @Schema(description = "Average user rating from 0.0 to 5.0", example = "4.8")
+    double averageRating,
+
+    @Schema(description = "Total number of users who favorited this recipe", example = "1250")
+    long favoritesCount,
+
+    @Schema(description = "Total number of reviews for this recipe", example = "51")
+    long reviewsCount
 ) {}
