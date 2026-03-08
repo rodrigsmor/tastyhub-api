@@ -18,7 +18,7 @@ import java.util.Set;
 @Getter
 @Setter
 @Builder
-@Table(name = "user_collections")
+@Table(name = "User Collections")
 public class UserCollection {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,6 +83,12 @@ public class UserCollection {
     public void addRecipe(Recipe recipe) {
         if (this.recipes.add(recipe)) {
             recipe.incrementFavorites();
+        }
+    }
+
+    public void removeRecipe(Recipe recipe) {
+        if (this.recipes.remove(recipe)) {
+            recipe.decrementFavorites();
         }
     }
 }
