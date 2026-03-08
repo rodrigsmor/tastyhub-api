@@ -11,7 +11,7 @@ public record ReviewResponseDto(
     Long id,
 
     @Schema(description = "Summary of the user who wrote the review")
-    UserSummaryDto userSummaryDto,
+    UserSummaryDto author,
 
     @Schema(description = "The review text", example = "This carbonara recipe is amazing!")
     String content,
