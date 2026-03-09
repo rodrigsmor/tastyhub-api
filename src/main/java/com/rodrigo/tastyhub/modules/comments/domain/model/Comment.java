@@ -53,11 +53,14 @@ public class Comment {
         validateContent(content);
 
         Comment comment = new Comment();
+
         comment.rating = rating;
         comment.content = content;
         comment.user = author;
         comment.recipe = recipe;
         comment.createdAt = OffsetDateTime.now();
+
+        recipe.updateStatisticRating(rating);
 
         return comment;
     }

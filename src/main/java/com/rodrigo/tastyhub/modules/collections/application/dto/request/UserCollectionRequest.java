@@ -15,15 +15,9 @@ public record UserCollectionRequest(
     @Size(max = 255)
     String description,
 
-    @Schema(example = "true", description = "Whether this collection is marked as a user favorite")
-    boolean isFavorite,
-
     @Schema(example = "false", description = "If true, the collection is pinned/fixed at the top of the list")
     boolean isFixed,
 
     @Schema(example = "true", description = "If true, the collection is visible to other users")
-    boolean isPublic,
-
-    @Schema(example = "true", description = "Indicates if the collection can be deleted (system-default collections are often non-deletable)")
-    boolean isDeletable
+    boolean isPublic
 ) {}

@@ -85,4 +85,10 @@ public class UserCollection {
             recipe.incrementFavorites();
         }
     }
+
+    public void removeRecipe(Recipe recipe) {
+        if (this.recipes.remove(recipe)) {
+            recipe.decrementFavorites();
+        }
+    }
 }

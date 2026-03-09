@@ -8,11 +8,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Schema(description = "Detailed representation of a recipe, including all instructions, ingredients, and metrics")
 public record FullRecipeDto(
     @Schema(description = "Unique identifier of the recipe", example = "202")

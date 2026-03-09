@@ -43,6 +43,15 @@ public class UserService {
 
     private final RoleService roleService;
 
+    public boolean existsById(Long userId) {
+        return userRepository.existsById(userId);
+    }
+
+    public User findByIdOrThrow(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
     @Transactional
     public User createNewUser(SignupRequestDto dto) {
         if (userRepository.existsByEmail(dto.email())) {
@@ -66,8 +75,7 @@ public class UserService {
     }
 
     public UserFullStatsDto getUserProfileById(Long userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findByIdOrThrow(userId);
 
         long articleCount = articleService.getArticlesCountByUserId(userId);
         long recipeCount = recipeService.getRecipesCountByUserId(userId);

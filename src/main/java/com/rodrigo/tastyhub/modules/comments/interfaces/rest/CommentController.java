@@ -4,7 +4,7 @@ import com.rodrigo.tastyhub.modules.comments.application.dto.request.ReviewReque
 import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewPagination;
 import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewResponseDto;
 import com.rodrigo.tastyhub.modules.comments.application.mapper.CommentMapper;
-import com.rodrigo.tastyhub.modules.comments.domain.CommentService;
+import com.rodrigo.tastyhub.modules.comments.domain.services.CommentService;
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.comments.domain.model.CommentSortBy;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
