@@ -6,6 +6,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
 import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
 import org.apache.coyote.BadRequestException;
@@ -81,7 +82,7 @@ class AuthControllerTest {
                 "Pass123!"
             );
 
-            when(authService.signup(any())).thenThrow(new BadRequestException("This email is already in use!"));
+            when(authService.signup(any())).thenThrow(new DomainException("This email is already in use!"));
 
             mockMvc.perform(post("/api/auth/signup")
                     .contentType(MediaType.APPLICATION_JSON)
