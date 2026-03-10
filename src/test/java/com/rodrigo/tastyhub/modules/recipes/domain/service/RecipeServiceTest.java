@@ -1,7 +1,9 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeIngredientMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
@@ -11,6 +13,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +25,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -254,5 +262,110 @@ class RecipeServiceTest {
             assertEquals(mockRecipeDto.estimatedCost(), capturedRecipe.getEstimatedCost());
             assertEquals(currency, capturedRecipe.getCurrency());
         }
+    }
+
+    @Nested
+    @DisplayName("Tests for List Recipes Method")
+    class ListRecipes {
+        @Test
+        @DisplayName("Should return paginated recipes successfully")
+        void shouldReturnPaginatedRecipesSuccessfully() {
+            ListRecipesQuery query = new ListRecipesQuery(
+                "search",
+                0,
+                10,
+                RecipeSortBy.CREATION_DATE,
+                SortDirection.DESC,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+
+            Recipe fakeRecipe = createFakeRecipe();
+            Page<Recipe> recipePage = new PageImpl<>(List.of(fakeRecipe), PageRequest.of(0, 10), 1);
+
+            when(recipeRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(recipePage);
+
+            RecipePagination result = recipeService.listRecipes(query);
+
+            assertNotNull(result);
+            assertEquals(1, result.recipes().size());
+            assertEquals(0, result.metadata().page());
+            assertEquals(1, result.metadata().totalPages());
+            assertEquals(1L, result.metadata().totalItems());
+
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(recipeRepository).findAll(any(Specification.class), pageableCaptor.capture());
+
+            Pageable capturedPageable = pageableCaptor.getValue();
+            assertEquals(0, capturedPageable.getPageNumber());
+            assertEquals(10, capturedPageable.getPageSize());
+            assertTrue(capturedPageable.getSort().getOrderFor("createdAt").isDescending());
+        }
+
+        @Test
+        @DisplayName("Should return empty pagination when no recipes match filters")
+        void shouldReturnEmptyPaginationWhenNoRecipesFound() {
+            ListRecipesQuery query = new ListRecipesQuery(
+                "",
+                1,
+                10,
+                RecipeSortBy.CREATION_DATE,
+                SortDirection.DESC,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+            Page<Recipe> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
+
+            when(recipeRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(emptyPage);
+
+            RecipePagination result = recipeService.listRecipes(query);
+
+            assertTrue(result.recipes().isEmpty());
+            assertEquals(0, result.metadata().totalItems());
+            verify(recipeRepository).findAll(any(Specification.class), any(Pageable.class));
+        }
+    }
+
+    private Recipe createFakeRecipe() {
+        Recipe recipe = new Recipe();
+        recipe.setId(1L);
+        recipe.setTitle("Test Recipe");
+        recipe.setAuthor(new User());
+        recipe.setStatistics(new RecipeStatistics());
+        recipe.setCreatedAt(OffsetDateTime.now());
+
+        User user = User
+            .builder()
+            .id(1L)
+            .firstName("Mock")
+            .lastName("Last Name")
+            .username("usernamemock")
+            .profilePictureUrl("/profile")
+            .profilePictureAlt("alt profile")
+            .bio("lorem ipsum dolor sit amet")
+            .coverPhotoUrl("/cover")
+            .coverPhotoAlt("alt cover")
+            .build();
+
+        recipe.setAuthor(user);
+        return recipe;
     }
 }
