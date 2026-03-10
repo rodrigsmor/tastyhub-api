@@ -13,6 +13,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
@@ -31,6 +32,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -54,6 +57,9 @@ class RecipeServiceTest {
 
     @Mock
     private CurrencyService currencyService;
+
+    @Mock
+    private ImageStorageService imageStorageService;
 
     @InjectMocks
     private RecipeService recipeService;
@@ -599,6 +605,115 @@ class RecipeServiceTest {
 
         private UpdateRecipeDto createEmptyUpdateDto() {
             return new UpdateRecipeDto(null, null, null, null, null, null, null, null, null);
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for Update Cover Method")
+    class UpdateCoverTests {
+
+        @Test
+        @DisplayName("Should update cover successfully and delete old image when author is the requester")
+        void shouldUpdateCoverSuccessfully() {
+            Long recipeId = 1L;
+            Long userId = 10L;
+            String oldCover = "old-image.jpg";
+            String newCover = "new-image.jpg";
+            String altText = "New Alt Text";
+
+            User author = new User();
+            author.setId(userId);
+
+            Recipe recipe = new Recipe();
+            recipe.setId(recipeId);
+            recipe.setAuthor(author);
+            recipe.setCoverUrl(oldCover);
+
+            User currentUser = new User();
+            currentUser.setId(userId);
+
+            MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
+
+            when(securityService.getCurrentUser()).thenReturn(currentUser);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(imageStorageService.storeImage(file)).thenReturn(newCover);
+            when(recipeRepository.save(any())).thenReturn(recipe);
+
+            Recipe result = recipeService.updateCoverById(recipeId, file, altText);
+
+            assertEquals(newCover, result.getCoverUrl());
+            assertEquals(altText, result.getCoverAlt());
+
+            verify(imageStorageService).storeImage(file);
+            verify(recipeRepository).save(recipe);
+            verify(imageStorageService).deleteImage(oldCover);
+        }
+
+        @Test
+        @DisplayName("Should throw ForbiddenException when user is not the author")
+        void shouldThrowForbiddenExceptionWhenUserIsNotAuthor() {
+            Long recipeId = 1L;
+            User author = new User();
+            author.setId(1L);
+
+            Recipe recipe = new Recipe();
+            recipe.setAuthor(author);
+
+            User stranger = new User();
+            stranger.setId(99L);
+
+            MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
+
+            when(securityService.getCurrentUser()).thenReturn(stranger);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+
+            assertThrows(ForbiddenException.class, () ->
+                recipeService.updateCoverById(recipeId, file, "alt")
+            );
+
+            verify(imageStorageService, never()).storeImage(any());
+            verify(recipeRepository, never()).save(any());
+            verify(imageStorageService, never()).deleteImage(any());
+        }
+
+        @Test
+        @DisplayName("Should update cover but not call deleteImage if oldFileName was null")
+        void shouldUpdateCoverButNotDeleteIfOldFileIsNull() {
+            Long recipeId = 1L;
+            User author = new User();
+            author.setId(1L);
+
+            Recipe recipe = new Recipe();
+            recipe.setAuthor(author);
+            recipe.setCoverUrl(null);
+
+            String newCover = "brand-new.jpg";
+            MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
+
+            when(securityService.getCurrentUser()).thenReturn(author);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(imageStorageService.storeImage(file)).thenReturn(newCover);
+
+            recipeService.updateCoverById(recipeId, file, "alt");
+
+            verify(imageStorageService, never()).deleteImage(anyString());
+            verify(recipeRepository).save(recipe);
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when recipe does not exist")
+        void shouldThrowResourceNotFoundExceptionWhenRecipeMissing() {
+            Long recipeId = 1L;
+            MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
+
+            when(securityService.getCurrentUser()).thenReturn(new User());
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.empty());
+
+            assertThrows(ResourceNotFoundException.class, () ->
+                recipeService.updateCoverById(recipeId, file, "alt")
+            );
+
+            verifyNoInteractions(imageStorageService);
         }
     }
 
