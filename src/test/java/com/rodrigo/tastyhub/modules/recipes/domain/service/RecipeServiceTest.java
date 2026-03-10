@@ -1,13 +1,13 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
-import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.*;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeIngredientMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
+import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
@@ -34,10 +34,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -409,6 +406,199 @@ class RecipeServiceTest {
             );
 
             verify(recipeRepository, never()).delete(any(Recipe.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for Update Recipe Method")
+    class UpdateRecipeTests {
+        @Test
+        @DisplayName("Should update recipe successfully when user is the author")
+        void shouldUpdateRecipeSuccessfully() {
+            Long recipeId = 1L;
+            Long userId = 10L;
+
+            User author = new User();
+            author.setId(userId);
+
+            Recipe recipe = spy(new Recipe());
+            recipe.setId(recipeId);
+            recipe.setAuthor(author);
+            recipe.setCookTimeMin(10);
+            recipe.setCookTimeMax(20);
+
+            RecipeStatistics recipeStatistics = new RecipeStatistics();
+
+            recipeStatistics.incrementRating(new BigDecimal("4.5"));
+            recipeStatistics.setFavoritesCount(0);
+
+            recipe.setStatistics(recipeStatistics);
+
+            UpdateRecipeDto updateDto = new UpdateRecipeDto(
+                "New Title",
+                "New Description",
+                null,
+                15,
+                new BigDecimal("50.0"),
+                (short) 1,
+                Set.of(1L, 2L),
+                null,
+                null
+            );
+
+            User currentUser = new User();
+            currentUser.setId(userId);
+
+            Currency mockCurrency = new Currency((short) 1, "USD", "Dollar", "$");
+
+            when(tagService.findAllById(Set.of(1L, 2L))).thenReturn(new ArrayList<>(List.of(
+                new Tag(1L, "tag1"),
+                new Tag(2L, "tag2")
+            )));
+            when(securityService.getCurrentUser()).thenReturn(currentUser);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(currencyService.findById(any())).thenReturn(mockCurrency);
+            when(recipeRepository.save(any())).thenReturn(recipe);
+
+            FullRecipeDto result = recipeService.updateRecipeById(recipeId, updateDto);
+
+            assertNotNull(result);
+            assertEquals("New Title", recipe.getTitle());
+            assertEquals("New Description", recipe.getDescription());
+
+            verify(recipe).updateTiming(anyInt(), anyInt());
+            verify(recipe).updateMonetaryDetails(eq(updateDto.estimatedCost()), eq(mockCurrency));
+            verify(recipeRepository).save(recipe);
+        }
+
+        @Test
+        @DisplayName("Should throw ForbiddenException when user is not the author")
+        void shouldThrowForbiddenExceptionWhenUserIsNotAuthor() {
+            Long recipeId = 1L;
+            User author = new User();
+            author.setId(10L);
+
+            Recipe recipe = new Recipe();
+            recipe.setAuthor(author);
+
+            User stranger = new User();
+            stranger.setId(99L);
+
+            UpdateRecipeDto updateDto = createEmptyUpdateDto();
+
+            when(securityService.getCurrentUser()).thenReturn(stranger);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+
+            assertThrows(ForbiddenException.class, () ->
+                recipeService.updateRecipeById(recipeId, updateDto)
+            );
+
+            verify(recipeRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should NOT update fields when DTO values are null (Partial Update)")
+        void shouldNotUpdateFieldsWhenDtoValuesAreNull() {
+            Long recipeId = 1L;
+            String originalTitle = "Original Title";
+
+            User author = new User();
+            author.setId(1L);
+
+            Recipe recipe = new Recipe();
+            recipe.setAuthor(author);
+            recipe.setTitle(originalTitle);
+
+            RecipeStatistics recipeStatistics = new RecipeStatistics();
+
+            recipeStatistics.incrementRating(new BigDecimal("4.5"));
+            recipeStatistics.setFavoritesCount(0);
+
+            recipe.setStatistics(recipeStatistics);
+
+            UpdateRecipeDto updateDto = new UpdateRecipeDto(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+
+            when(securityService.getCurrentUser()).thenReturn(author);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(recipeRepository.save(any())).thenReturn(recipe);
+
+            recipeService.updateRecipeById(recipeId, updateDto);
+
+            assertEquals(originalTitle, recipe.getTitle(), "Title should remain unchanged");
+            verify(currencyService, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("Should sync tags, steps and ingredients when present in DTO")
+        void shouldSyncCollectionsWhenPresentInDto() {
+            Long recipeId = 1L;
+            User author = new User();
+            author.setId(1L);
+            Recipe recipe = new Recipe();
+            recipe.setAuthor(author);
+
+            RecipeStatistics recipeStatistics = new RecipeStatistics();
+
+            recipeStatistics.incrementRating(new BigDecimal("4.5"));
+            recipeStatistics.setFavoritesCount(0);
+
+            recipe.setStatistics(recipeStatistics);
+
+            List<UpdatePreparationStepDto> stepsMock = new ArrayList<>(
+                List.of(
+                    new UpdatePreparationStepDto(
+                        1L,
+                        0,
+                        "Step 1"
+                    )
+                )
+            );
+
+            List<UpdateRecipeIngredientDto> ingredientsMock = new ArrayList<>(List.of(
+                new UpdateRecipeIngredientDto(
+                    1L,
+                    new BigDecimal("10"),
+                    10L,
+                    IngredientUnitEnum.GRAM
+                )
+            ));
+
+            UpdateRecipeDto updateDto = new UpdateRecipeDto(
+                "Title",
+                "Desc",
+                10,
+                10,
+                null,
+                null,
+                Set.of(1L),
+                stepsMock,
+                ingredientsMock
+            );
+
+            when(tagService.findAllById(Set.of(1L))).thenReturn(new ArrayList<>(List.of(
+                new Tag(1L, "tag1")
+            )));
+            when(securityService.getCurrentUser()).thenReturn(author);
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(recipeRepository.save(any())).thenReturn(recipe);
+
+            recipeService.updateRecipeById(recipeId, updateDto);
+
+            verify(recipeRepository).save(any(Recipe.class));
+        }
+
+        private UpdateRecipeDto createEmptyUpdateDto() {
+            return new UpdateRecipeDto(null, null, null, null, null, null, null, null, null);
         }
     }
 
