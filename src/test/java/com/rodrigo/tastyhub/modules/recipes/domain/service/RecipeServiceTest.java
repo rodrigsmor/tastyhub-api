@@ -15,6 +15,7 @@ import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -341,6 +342,73 @@ class RecipeServiceTest {
             assertTrue(result.recipes().isEmpty());
             assertEquals(0, result.metadata().totalItems());
             verify(recipeRepository).findAll(any(Specification.class), any(Pageable.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for Delete Recipe Method")
+    class DeleteRecipeTests {
+
+        @Test
+        @DisplayName("Should delete recipe successfully when user is the author")
+        void shouldDeleteRecipeSuccessfully() {
+            Long recipeId = 1L;
+            Long userId = 10L;
+
+            User author = new User();
+            author.setId(userId);
+
+            Recipe recipe = new Recipe();
+            recipe.setId(recipeId);
+            recipe.setAuthor(author);
+
+            User currentUser = new User();
+            currentUser.setId(userId);
+
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(securityService.getCurrentUser()).thenReturn(currentUser);
+
+            recipeService.deleteRecipeById(recipeId);
+
+            verify(recipeRepository, times(1)).delete(recipe);
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when recipe does not exist")
+        void shouldThrowResourceNotFoundExceptionWhenRecipeDoesNotExist() {
+            Long recipeId = 1L;
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.empty());
+
+            assertThrows(ResourceNotFoundException.class, () ->
+                recipeService.deleteRecipeById(recipeId)
+            );
+
+            verify(securityService, never()).getCurrentUser();
+            verify(recipeRepository, never()).delete(any(Recipe.class));
+        }
+
+        @Test
+        @DisplayName("Should throw ForbiddenException when user is not the author")
+        void shouldThrowForbiddenExceptionWhenUserIsNotAuthor() {
+            Long recipeId = 1L;
+
+            User author = new User();
+            author.setId(10L);
+
+            Recipe recipe = new Recipe();
+            recipe.setAuthor(author);
+
+            User stranger = new User();
+            stranger.setId(99L);
+
+            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+            when(securityService.getCurrentUser()).thenReturn(stranger);
+
+            assertThrows(ForbiddenException.class, () ->
+                recipeService.deleteRecipeById(recipeId)
+            );
+
+            verify(recipeRepository, never()).delete(any(Recipe.class));
         }
     }
 
