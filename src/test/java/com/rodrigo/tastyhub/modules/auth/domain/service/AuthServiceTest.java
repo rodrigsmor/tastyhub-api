@@ -5,15 +5,11 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
-import com.rodrigo.tastyhub.modules.user.domain.repository.RoleRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
-import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
-import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
-import com.rodrigo.tastyhub.shared.exception.InfrastructureException;
-import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
+import com.rodrigo.tastyhub.shared.exception.*;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
 import com.rodrigo.tastyhub.modules.auth.domain.model.RefreshToken;
 import com.rodrigo.tastyhub.modules.auth.domain.model.VerificationToken;
@@ -26,9 +22,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,12 +47,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
     @Mock
     private JwtGenerator jwtGenerator;
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -80,11 +82,11 @@ class AuthServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for Sign Up Method")
-    class SignupTests {
+    @DisplayName("Tests for Create New User Method")
+    class CreateNewUserTests {
         @Test
-        @DisplayName("Should throws BadRequest when e-mail is already in use")
-        void shouldThrowsBadRequestExceptionWhenEmailIsAlreadyInUse() throws BadRequestException {
+        @DisplayName("Should throws DomainException when e-mail is already in use")
+        void shouldThrowsDomainException2WhenEmailIsAlreadyInUse() {
             SignupRequestDto signupDto = new SignupRequestDto(
                 "Mary",
                 "Smith",
@@ -93,12 +95,13 @@ class AuthServiceTest {
             );
 
             when(userService.createNewUser(signupDto))
-                .thenThrow(new BadRequestException("This email is already in use"));
+                .thenThrow(new DomainException("This email is already in use!"));
 
-            assertThrows(BadRequestException.class, () -> {
+            assertThrows(DomainException.class, () -> {
                 authService.signup(signupDto);
             });
-            verify(userService).createNewUser(signupDto);
+
+            verify(userService, times(1)).createNewUser(signupDto);
         }
 
         @Test

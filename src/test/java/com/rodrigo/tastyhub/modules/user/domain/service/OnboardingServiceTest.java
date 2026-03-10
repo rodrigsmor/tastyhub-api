@@ -1,7 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
-import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
