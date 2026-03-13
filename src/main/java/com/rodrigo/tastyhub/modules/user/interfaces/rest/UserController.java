@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
     description = "Endpoints for managing user profiles, identity information, and social settings."
 )
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
 
