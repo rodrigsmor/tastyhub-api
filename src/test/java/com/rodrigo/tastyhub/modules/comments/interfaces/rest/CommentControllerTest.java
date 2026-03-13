@@ -2,9 +2,14 @@ package com.rodrigo.tastyhub.modules.comments.interfaces.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rodrigo.tastyhub.modules.comments.application.dto.request.ReviewRequestDto;
+import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewPagination;
+import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewSummaryDto;
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
+import com.rodrigo.tastyhub.modules.comments.domain.model.CommentSortBy;
 import com.rodrigo.tastyhub.modules.comments.domain.services.CommentService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
+import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
@@ -27,6 +33,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import static org.mockito.Mockito.*;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -123,6 +130,72 @@ class CommentControllerTest {
                     .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Recipe not found with the provided ID"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/comments/recipe/{id}")
+    class ListRecipeReviewsTests {
+        @Test
+        @DisplayName("1. Should return 200 and paginated reviews with default values")
+        void shouldReturnPaginatedReviewsSuccessfully() throws Exception {
+            Long recipeId = 1L;
+
+            ReviewPagination mockPagination = new ReviewPagination(
+                List.of(),
+                new ReviewSummaryDto(0, 0, 0.0, List.of()),
+                new PaginationMetadata(
+                    0,
+                    10,
+                    0,
+                    0L,
+                    SortDirection.DESC,
+                    false,
+                    false
+                )
+            );
+
+            when(commentService.listReviewsByRecipeId(
+                eq(recipeId),
+                eq(0),
+                eq(10),
+                eq(CommentSortBy.CREATED_AT), eq(SortDirection.DESC))
+            ).thenReturn(mockPagination);
+
+            mockMvc.perform(get("/api/comments/recipe/{id}", recipeId)
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.metadata.page").value(0))
+                .andExpect(jsonPath("$.metadata.pageSize").value(10));
+        }
+
+        @Test
+        @DisplayName("2. Should return 200 when custom parameters are provided")
+        void shouldReturnReviewsWithCustomParams() throws Exception {
+            Long recipeId = 1L;
+
+            when(commentService.listReviewsByRecipeId(
+                eq(recipeId), eq(2), eq(5), eq(CommentSortBy.RATING), eq(SortDirection.ASC))
+            ).thenReturn(null);
+
+            mockMvc.perform(get("/api/comments/recipe/{id}", recipeId)
+                    .param("page", "2")
+                    .param("size", "5")
+                    .param("sortBy", "RATING")
+                    .param("direction", "ASC")
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+            verify(commentService).listReviewsByRecipeId(1L, 2, 5, CommentSortBy.RATING, SortDirection.ASC);
+        }
+
+        @Test
+        @DisplayName("3. Should return 400 when recipeId is invalid (ConstraintViolation)")
+        void shouldReturn400WhenIdIsInvalid() throws Exception {
+            Long invalidId = 0L;
+
+            mockMvc.perform(get("/api/comments/recipe/{id}", invalidId))
+                .andExpect(status().isBadRequest());
         }
     }
 }
