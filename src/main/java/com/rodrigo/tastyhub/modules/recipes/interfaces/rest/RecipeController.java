@@ -36,7 +36,7 @@ import java.net.URI;
         "Read routes are hybrid, while write routes are mandatory private (requiring JWT authentication and authorization to perform these writes)."
 )
 @RestController
-@RequestMapping("/api/recipe")
+@RequestMapping("/api/recipes")
 public class RecipeController {
     private final RecipeService recipeService;
 
