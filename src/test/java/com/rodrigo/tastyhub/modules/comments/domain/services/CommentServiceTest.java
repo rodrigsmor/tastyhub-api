@@ -2,8 +2,11 @@ package com.rodrigo.tastyhub.modules.comments.domain.services;
 
 import com.rodrigo.tastyhub.modules.comments.application.dto.request.ReviewRequestDto;
 import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewPagination;
+import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewStarOverview;
+import com.rodrigo.tastyhub.modules.comments.application.dto.response.ReviewSummaryDto;
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.comments.domain.model.CommentSortBy;
+import com.rodrigo.tastyhub.modules.comments.domain.model.ReviewStatsProjection;
 import com.rodrigo.tastyhub.modules.comments.domain.repository.CommentRepository;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
@@ -29,6 +32,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -206,6 +210,84 @@ class CommentServiceTest {
             assertEquals(4, meta.totalPages());
             assertTrue(meta.hasPrevious());
             assertTrue(meta.hasNext());
+        }
+    }
+
+    @Nested
+    @DisplayName("buildReviewSummary Tests")
+    class BuildReviewSummaryTests {
+        @Test
+        @DisplayName("1. Should return empty summary when no reviews exist")
+        void shouldReturnEmptySummaryWhenNoReviews() {
+            Long recipeId = 1L;
+            when(commentRepository.getReviewStatsByRecipeId(recipeId)).thenReturn(null);
+
+            ReviewSummaryDto result = service.buildReviewSummary(recipeId);
+
+            assertEquals(0, result.totalReviews());
+            assertEquals(0.0, result.averageRating());
+            assertTrue(result.ratingBreakdown().isEmpty());
+        }
+
+        @Test
+        @DisplayName("2. Should calculate percentages correctly and include all star levels")
+        void shouldCalculateSummaryCorrectly() {
+            // GIVEN
+            Long recipeId = 1L;
+            int totalReviews = 10;
+
+            ReviewStatsProjection mockStats = mock(ReviewStatsProjection.class);
+            when(mockStats.getTotalReviews()).thenReturn(totalReviews);
+            when(mockStats.getTotalUsers()).thenReturn(8);
+            when(mockStats.getAverageRating()).thenReturn(4.5);
+
+            List<Map<String, Object>> rawBreakdown = List.of(
+                Map.of("ratingValue", 5.0, "count", 8),
+                Map.of("ratingValue", 4.0, "count", 2)
+            );
+
+            when(commentRepository.getReviewStatsByRecipeId(recipeId)).thenReturn(mockStats);
+            when(commentRepository.getRatingCountBreakdown(recipeId)).thenReturn(rawBreakdown);
+
+            ReviewSummaryDto result = service.buildReviewSummary(recipeId);
+
+            assertEquals(10, result.totalReviews());
+            assertEquals(4.5, result.averageRating());
+
+            assertEquals(5, result.ratingBreakdown().size());
+
+            ReviewStarOverview fiveStars = result.ratingBreakdown().stream()
+                .filter(o -> o.ratingValue() == 5).findFirst().orElseThrow();
+            assertEquals(80.0, fiveStars.percentage());
+            assertEquals(8, fiveStars.count());
+
+            ReviewStarOverview twoStars = result.ratingBreakdown().stream()
+                .filter(o -> o.ratingValue() == 2).findFirst().orElseThrow();
+            assertEquals(0.0, twoStars.percentage());
+            assertEquals(0, twoStars.count());
+        }
+
+        @Test
+        @DisplayName("3. Should handle edge case ratings (< 1 star) as 1 star")
+        void shouldHandleEdgeCaseRatings() {
+            Long recipeId = 1L;
+            ReviewStatsProjection mockStats = mock(ReviewStatsProjection.class);
+            when(mockStats.getTotalReviews()).thenReturn(1);
+
+            List<Map<String, Object>> rawBreakdown = List.of(
+                Map.of("ratingValue", 0.5, "count", 1)
+            );
+
+            when(commentRepository.getReviewStatsByRecipeId(recipeId)).thenReturn(mockStats);
+            when(commentRepository.getRatingCountBreakdown(recipeId)).thenReturn(rawBreakdown);
+
+            ReviewSummaryDto result = service.buildReviewSummary(recipeId);
+
+            ReviewStarOverview oneStar = result.ratingBreakdown().stream()
+                .filter(o -> o.ratingValue() == 1).findFirst().orElseThrow();
+
+            assertEquals(1, oneStar.count());
+            assertEquals(100.0, oneStar.percentage());
         }
     }
 }
