@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -16,6 +17,9 @@ public record UpdateRecipeDto(
 
     @Schema(example = "A classic Italian pasta dish...", description = "Brief description of the recipe")
     String description,
+
+    @Schema(example = "MEAL", description = "Recipe Category")
+    RecipeCategory category,
 
     @Schema(example = "20", description = "Minimum cooking time in minutes")
     @Positive(message = "Time must be positive")
@@ -35,8 +39,8 @@ public record UpdateRecipeDto(
     @Schema(description = "Set of tag IDs to categorize the recipe")
     Set<Long> tagIds,
 
-    @Schema(description = "List of step-by-step instructions")
-    @NotEmpty(message = "At least one instruction step is required")
+    @Schema(description = "List of step-by-step instructions", nullable = true)
+    @Size(min = 1, message = "If provided, at least one instruction step is required")
     @Valid
     List<UpdatePreparationStepDto> steps,
 

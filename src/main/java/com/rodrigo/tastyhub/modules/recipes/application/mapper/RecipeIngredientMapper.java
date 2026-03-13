@@ -1,6 +1,7 @@
 package com.rodrigo.tastyhub.modules.recipes.application.mapper;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.RecipeIngredientRequestDto;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeIngredientDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.IngredientDto;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeIngredient;
 
@@ -19,6 +20,15 @@ public final class RecipeIngredientMapper {
 
     public static RecipeIngredientRequestDto toIngredientRequestDto(RecipeIngredient ingredient) {
         return new RecipeIngredientRequestDto(
+            ingredient.getQuantity(),
+            ingredient.getIngredient().getId(),
+            ingredient.getUnit()
+        );
+    }
+
+    public static UpdateRecipeIngredientDto toUpdateDto(RecipeIngredient ingredient) {
+        return new UpdateRecipeIngredientDto(
+            ingredient.getId(),
             ingredient.getQuantity(),
             ingredient.getIngredient().getId(),
             ingredient.getUnit()

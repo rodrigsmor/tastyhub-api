@@ -51,7 +51,7 @@ public class WebSecurityConfig {
                 ).permitAll()
                 .requestMatchers("/api/auth/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/recipe/**", "/api/comments/**", "/api/collections/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users/**", "/api/recipes/**", "/api/comments/**", "/api/collections/**").permitAll()
                 .requestMatchers("/images/**").permitAll()
                 .anyRequest().authenticated()
             ).httpBasic(Customizer.withDefaults());

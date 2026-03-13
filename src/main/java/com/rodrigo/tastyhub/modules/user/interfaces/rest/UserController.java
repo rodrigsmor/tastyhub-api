@@ -3,6 +3,7 @@ package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
     description = "Endpoints for managing user profiles, identity information, and social settings."
 )
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
 
@@ -70,9 +70,9 @@ public class UserController {
 
         @Parameter(description = "Profile picture file")
         @RequestPart(value = "alternative_text", required = false) String alternativeText
-    ) throws BadRequestException {
+    ) {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("File is mandatory and cannot be empty");
+            throw new DomainException("File is mandatory and cannot be empty");
         }
 
         UserSummaryDto response = this.userService.updateProfilePicture(file, alternativeText);

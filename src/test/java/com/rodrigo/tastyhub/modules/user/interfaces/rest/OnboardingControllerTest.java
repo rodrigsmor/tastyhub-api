@@ -105,12 +105,12 @@ class OnboardingControllerTest {
             );
 
             when(onboardingService.updateUserProfile(any(), isNull()))
-                    .thenReturn(ResponseEntity.ok(expectedResponse));
+                .thenReturn(ResponseEntity.ok(expectedResponse));
 
             mockMvc.perform(multipart(HttpMethod.PATCH, "/api/onboarding/profile")
-                            .param("username", "johndoe")
-                            .contentType(MediaType.MULTIPART_FORM_DATA))
-                    .andExpect(status().isOk());
+                    .param("username", "johndoe")
+                    .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isOk());
         }
     }
 
@@ -352,9 +352,9 @@ class OnboardingControllerTest {
         @DisplayName("Should return current onboarding status successfully")
         void shouldReturnCurrentStep() throws Exception {
             OnboardingProgressDto expectedResponse = new OnboardingProgressDto(
-                    OnboardingStatus.STEP_2,
-                    OnboardingStatus.STEP_3,
-                    false
+                OnboardingStatus.STEP_2,
+                OnboardingStatus.STEP_3,
+                false
             );
 
             when(onboardingService.getCurrentStep()).thenReturn(expectedResponse);
