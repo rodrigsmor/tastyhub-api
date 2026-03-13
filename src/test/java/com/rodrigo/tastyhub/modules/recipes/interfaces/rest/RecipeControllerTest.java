@@ -1,8 +1,14 @@
 package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.SummaryRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
+import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +57,18 @@ class RecipeControllerTest {
         fakeRecipe.setDescription("waved about helplessly as he looked. What's happened to me? he thought.");
         fakeRecipe.setCookTimeMin(0);
         fakeRecipe.setCookTimeMax(10);
-        fakeRecipe.setAuthor(new User());
+
+        User author = User
+            .builder()
+            .id(1L)
+            .firstName("John")
+            .lastName("Doe")
+            .username("chef_johndoe")
+            .profilePictureUrl(null)
+            .profilePictureAlt(null)
+            .build();
+
+        fakeRecipe.setAuthor(author);
         fakeRecipe.setCoverUrl("http://example.com");
         fakeRecipe.setCoverAlt("Alternative");
         fakeRecipe.setEstimatedCost(new BigDecimal("10.5"));
@@ -142,6 +159,77 @@ class RecipeControllerTest {
             mockMvc.perform(get(BASE_URL + "/{id}", recipeId))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/recipes (Listing and Filtering)")
+    class ListRecipesTests {
+        @Test
+        @DisplayName("1. Should return 200 and paginated list with default parameters")
+        void shouldReturnPaginatedRecipes() throws Exception {
+            RecipePagination mockPagination = new RecipePagination(
+                List.of(RecipeMapper.toSummaryDto(fakeRecipe)),
+                new PaginationMetadata(
+                    1,
+                    10,
+                    1,
+                    1L,
+                    SortDirection.ASC,
+                    false,
+                    false
+                )
+            );
+
+            when(recipeService.listRecipes(any(ListRecipesQuery.class))).thenReturn(mockPagination);
+
+            mockMvc.perform(get("/api/recipes")
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recipes").isArray())
+                .andExpect(jsonPath("$.metadata.page").value(1))
+                .andExpect(jsonPath("$.metadata.totalItems").value(1));
+        }
+
+        @Test
+        @DisplayName("2. Should apply filters correctly and return 200")
+        void shouldApplyFiltersCorrectly() throws Exception {
+            when(recipeService.listRecipes(any(ListRecipesQuery.class)))
+                .thenReturn(new RecipePagination(
+                    List.of(),
+                    new PaginationMetadata(
+                        1,
+                        10,
+                        1,
+                        1L,
+                        SortDirection.ASC,
+                        false,
+                        false
+                    )
+                ));
+
+            mockMvc.perform(get("/api/recipes")
+                    .param("tags", "vegan", "pasta")
+                    .param("minRating", "4")
+                    .param("page", "0")
+                    .param("size", "20")
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+            verify(recipeService).listRecipes(argThat(query ->
+                query.tags().containsAll(List.of("vegan", "pasta")) &&
+                query.minRating() == 4 &&
+                query.size() == 20
+            ));
+        }
+
+        @Test
+        @DisplayName("3. Should return 400 when validation in ListRecipesQuery fails")
+        void shouldReturn400OnInvalidParams() throws Exception {
+            mockMvc.perform(get("/api/recipes")
+                    .param("size", "-1")
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
         }
     }
 }
