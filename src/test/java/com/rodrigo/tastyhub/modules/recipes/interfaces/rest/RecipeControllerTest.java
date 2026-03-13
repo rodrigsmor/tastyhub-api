@@ -356,4 +356,45 @@ class RecipeControllerTest {
                 .andExpect(jsonPath("$.message").value("User must be verified to create recipes"));
         }
     }
+
+    @Nested
+    @DisplayName("DELETE /api/recipes/{id}")
+    class DeleteRecipeTests {
+        @Test
+        @DisplayName("1. Should return 204 when recipe is deleted successfully")
+        void shouldReturn204WhenDeleted() throws Exception {
+            Long recipeId = 1L;
+
+            doNothing().when(recipeService).deleteRecipeById(recipeId);
+
+            mockMvc.perform(delete("/api/recipes/{id}", recipeId)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+            verify(recipeService, times(1)).deleteRecipeById(recipeId);
+        }
+
+        @Test
+        @DisplayName("2. Should return 404 when recipe to delete does not exist")
+        void shouldReturn404WhenNotFound() throws Exception {
+            Long recipeId = 999L;
+            doThrow(new ResourceNotFoundException("Recipe not found"))
+                .when(recipeService).deleteRecipeById(recipeId);
+
+            mockMvc.perform(delete("/api/recipes/{id}", recipeId))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("3. Should return 403 when user is not the owner or admin")
+        void shouldReturn403WhenForbidden() throws Exception {
+            Long recipeId = 1L;
+            doThrow(new ForbiddenException("You do not have permission to delete this recipe"))
+                .when(recipeService).deleteRecipeById(recipeId);
+
+            mockMvc.perform(delete("/api/recipes/{id}", recipeId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You do not have permission to delete this recipe"));
+        }
+    }
 }
