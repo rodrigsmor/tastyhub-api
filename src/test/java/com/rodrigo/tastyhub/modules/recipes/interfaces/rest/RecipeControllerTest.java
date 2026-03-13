@@ -1,14 +1,19 @@
 package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.response.SummaryRecipeDto;
+import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
+import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeIngredientMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,7 +34,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
+import static org.hamcrest.Matchers.containsString;
 
 import static org.mockito.Mockito.*;
 
@@ -37,10 +45,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(RecipeController.class)
+@WithMockUser
 @AutoConfigureMockMvc(addFilters = false)
 class RecipeControllerTest {
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private RecipeService recipeService;
@@ -80,9 +92,9 @@ class RecipeControllerTest {
 
         fakeRecipe.setStatistics(recipeStatistics);
 
-        PreparationStep firstStep = PreparationStep.builder().id(1L).stepNumber(0).instruction("First Step").build();
-        PreparationStep secondStep = PreparationStep.builder().id(2L).stepNumber(1).instruction("Second Step").build();
-        PreparationStep thirdStep = PreparationStep.builder().id(3L).stepNumber(2).instruction("Third Step").build();
+        PreparationStep firstStep = PreparationStep.builder().id(1L).stepNumber(1).instruction("First Step").build();
+        PreparationStep secondStep = PreparationStep.builder().id(2L).stepNumber(2).instruction("Second Step").build();
+        PreparationStep thirdStep = PreparationStep.builder().id(3L).stepNumber(3).instruction("Third Step").build();
 
         List<PreparationStep> steps = new ArrayList<>(List.of(firstStep, secondStep, thirdStep));
 
@@ -96,7 +108,15 @@ class RecipeControllerTest {
         );
 
         fakeRecipe.setCurrency(currency);
-        fakeRecipe.setIngredients(new ArrayList<>());
+
+        RecipeIngredient ingredient = RecipeIngredient
+            .builder()
+            .quantity(new BigDecimal("10.5"))
+            .unit(IngredientUnitEnum.GRAM)
+            .ingredient(new Ingredient(1L, "Ingrediente"))
+            .build();
+
+        fakeRecipe.setIngredients(new ArrayList<>(List.of(ingredient)));
         fakeRecipe.setMedia(new ArrayList<>());
         fakeRecipe.setComments(new ArrayList<>());
         fakeRecipe.setTags(new HashSet<>());
@@ -230,6 +250,110 @@ class RecipeControllerTest {
                     .param("size", "-1")
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/recipes (Create Recipe)")
+    class CreateRecipeTests {
+        @Test
+        @DisplayName("1. Should return 201 and Location header when recipe is created")
+        void shouldReturn201WhenCreated() throws Exception {
+            CreateRecipeDto requestDto = new CreateRecipeDto(
+                "Beef Wellington",
+                "Classic dish",
+                RecipeCategory.SNACK,
+                60,
+                90,
+                new BigDecimal("150.00"),
+                (short) 2,
+                null,
+                fakeRecipe.getSteps().stream().map(PreparationStepMapper::toStepRequestDto).toList(),
+                fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientRequestDto).toList()
+            );
+
+            FullRecipeDto mockResponse = new FullRecipeDto(
+                101L,
+                "Beef Wellington",
+                "Classic dish",
+                RecipeCategory.SNACK,
+                60,
+                90,
+                new BigDecimal("150.00"),
+                null,
+                null,
+                null,
+                List.of(),
+                List.of(),
+                List.of(),
+                0,
+                0,
+                0.0,
+                0.0,
+                OffsetDateTime.now(),
+                OffsetDateTime.now()
+            );
+
+            when(recipeService.createRecipe(any(CreateRecipeDto.class))).thenReturn(mockResponse);
+
+            mockMvc.perform(post("/api/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestDto))
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+            .andExpect(header().string("Location", containsString("/api/recipes/101"))) // Valida o URI
+                .andExpect(jsonPath("$.id").value(101L))
+                .andExpect(jsonPath("$.title").value("Beef Wellington"));
+        }
+
+        @Test
+        @DisplayName("2. Should return 400 when required fields are missing (@Valid)")
+        void shouldReturn400OnInvalidInput() throws Exception {
+            CreateRecipeDto invalidDto = new CreateRecipeDto(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+
+            mockMvc.perform(post("/api/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidDto)))
+                .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(recipeService);
+        }
+
+        @Test
+        @DisplayName("3. Should return 403 when user is not verified")
+        void shouldReturn403WhenUnauthorized() throws Exception {
+            CreateRecipeDto requestDto = new CreateRecipeDto(
+                "Title",
+                "Desc",
+                RecipeCategory.SOUP,
+                10,
+                20,
+                null,
+                null,
+                null,
+                fakeRecipe.getSteps().stream().map(PreparationStepMapper::toStepRequestDto).toList(),
+                fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientRequestDto).toList()
+            );
+
+            when(recipeService.createRecipe(any()))
+                .thenThrow(new ForbiddenException("User must be verified to create recipes"));
+
+            mockMvc.perform(post("/api/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User must be verified to create recipes"));
         }
     }
 }
