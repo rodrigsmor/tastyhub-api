@@ -3,6 +3,7 @@ package com.rodrigo.tastyhub.modules.recipes.interfaces.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.CreateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
+import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
@@ -33,6 +34,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
@@ -395,6 +397,118 @@ class RecipeControllerTest {
             mockMvc.perform(delete("/api/recipes/{id}", recipeId))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("You do not have permission to delete this recipe"));
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/recipes/{id}")
+    class UpdateRecipeTests {
+        @Autowired
+        private ObjectMapper objectMapper;
+
+        @Test
+        @DisplayName("1. Should return 200 and the updated recipe when data is valid")
+        void shouldReturn200WhenUpdatedSuccessfully() throws Exception {
+            Long recipeId = 1L;
+            UpdateRecipeDto requestBody = new UpdateRecipeDto(
+                "Updated Title",
+                "Updated Description",
+                RecipeCategory.SNACK,
+                15,
+                30,
+                new BigDecimal("50.00"),
+                (short) 1,
+                null,
+                fakeRecipe.getSteps().stream().map(PreparationStepMapper::toUpdate).toList(),
+                fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toUpdateDto).toList()
+            );
+
+            FullRecipeDto mockResponse = new FullRecipeDto(
+                recipeId,
+                "Updated Title",
+                "Updated Description",
+                RecipeCategory.SNACK,
+                15,
+                30,
+                new BigDecimal("50.00"),
+                null,
+                "url",
+                "alt",
+                List.of(),
+                List.of(),
+                List.of(),
+                0,
+                0,
+                0.0,
+                0.0,
+                OffsetDateTime.now(),
+                OffsetDateTime.now()
+            );
+
+            when(recipeService.updateRecipeById(eq(recipeId), any(UpdateRecipeDto.class)))
+                .thenReturn(mockResponse);
+
+            mockMvc.perform(put("/api/recipes/{id}", recipeId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestBody))
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(recipeId))
+                .andExpect(jsonPath("$.title").value("Updated Title"))
+                .andExpect(jsonPath("$.category").value("SNACK"));
+        }
+
+        @Test
+        @DisplayName("2. Should return 403 when user is not the owner")
+        void shouldReturn403WhenNotOwner() throws Exception {
+            Long recipeId = 1L;
+            UpdateRecipeDto requestBody = new UpdateRecipeDto(
+                "Title",
+                "Desc",
+                RecipeCategory.SNACK,
+                10,
+                20,
+                BigDecimal.TEN,
+                (short) 1,
+                null,
+                null,
+                List.of())
+            ;
+
+            when(recipeService.updateRecipeById(eq(recipeId), any()))
+                .thenThrow(new ForbiddenException("You are not the owner of this recipe"));
+
+            mockMvc.perform(put("/api/recipes/{id}", recipeId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not the owner of this recipe"));
+        }
+
+        @Test
+        @DisplayName("3. Should return 404 when recipe does not exist")
+        void shouldReturn404WhenRecipeNotFound() throws Exception {
+            Long recipeId = 999L;
+            UpdateRecipeDto requestBody = new UpdateRecipeDto(
+                "Title",
+                "Desc",
+                RecipeCategory.CANDY,
+                10,
+                20,
+                BigDecimal.TEN,
+                (short) 1,
+                Set.of(),
+                null,
+                List.of()
+            );
+
+            when(recipeService.updateRecipeById(eq(recipeId), any()))
+                .thenThrow(new ResourceNotFoundException("Recipe not found"));
+
+            mockMvc.perform(put("/api/recipes/{id}", recipeId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isNotFound());
         }
     }
 }
