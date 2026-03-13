@@ -443,6 +443,7 @@ class RecipeServiceTest {
             UpdateRecipeDto updateDto = new UpdateRecipeDto(
                 "New Title",
                 "New Description",
+                RecipeCategory.SNACK,
                 null,
                 15,
                 new BigDecimal("50.0"),
@@ -531,6 +532,7 @@ class RecipeServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -582,6 +584,7 @@ class RecipeServiceTest {
             UpdateRecipeDto updateDto = new UpdateRecipeDto(
                 "Title",
                 "Desc",
+                null,
                 10,
                 10,
                 null,
@@ -604,7 +607,7 @@ class RecipeServiceTest {
         }
 
         private UpdateRecipeDto createEmptyUpdateDto() {
-            return new UpdateRecipeDto(null, null, null, null, null, null, null, null, null);
+            return new UpdateRecipeDto(null, null, null, null, null, null, null, null, null, null);
         }
     }
 
