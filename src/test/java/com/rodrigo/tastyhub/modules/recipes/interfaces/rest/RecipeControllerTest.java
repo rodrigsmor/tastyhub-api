@@ -24,10 +24,13 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -509,6 +512,65 @@ class RecipeControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestBody)))
                 .andExpect(status().isNotFound());
+        }
+
+        @Nested
+        @DisplayName("PATCH /api/recipes/{id}/cover")
+        class UpdateRecipeCoverTests {
+            @Test
+            @DisplayName("1. Should return 201 when cover is updated successfully")
+            void shouldUpdateCoverSuccessfully() throws Exception {
+                Long recipeId = 1L;
+                MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "cover.jpg",
+                    MediaType.IMAGE_JPEG_VALUE,
+                    "image-data".getBytes()
+                );
+                MockMultipartFile altText = new MockMultipartFile(
+                    "alternative_text",
+                    "",
+                    MediaType.TEXT_PLAIN_VALUE,
+                    "Delicious pasta".getBytes()
+                );
+
+                Recipe mockRecipe = fakeRecipe;
+
+                when(recipeService.updateCoverById(eq(recipeId), any(MultipartFile.class), anyString()))
+                    .thenReturn(mockRecipe);
+
+                mockMvc.perform(multipart(HttpMethod.PATCH, "/api/recipes/{id}/cover", recipeId)
+                        .file(file)
+                        .file(altText)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", containsString("/api/recipes/1/cover")))
+                    .andExpect(jsonPath("$.id").value(recipeId));
+            }
+
+            @Test
+            @DisplayName("2. Should return 400 when file part is missing")
+            void shouldReturn400WhenFileIsMissing() throws Exception {
+                Long recipeId = 1L;
+
+                mockMvc.perform(multipart(HttpMethod.PATCH, "/api/recipes/{id}/cover", recipeId)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                    .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("3. Should return 404 when recipe does not exist")
+            void shouldReturn404WhenRecipeNotFound() throws Exception {
+                Long recipeId = 999L;
+                MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "data".getBytes());
+
+                when(recipeService.updateCoverById(eq(recipeId), any(), any()))
+                        .thenThrow(new ResourceNotFoundException("Recipe not found"));
+
+                mockMvc.perform(multipart(HttpMethod.PATCH, "/api/recipes/{id}/cover", recipeId)
+                        .file(file))
+                    .andExpect(status().isNotFound());
+            }
         }
     }
 }
