@@ -1,0 +1,31 @@
+package com.rodrigo.tastyhub.shared.config.security;
+
+import com.rodrigo.tastyhub.modules.social.domain.service.FollowService;
+import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+@Component("userSecurity")
+@RequiredArgsConstructor
+public class UserSecurityEvaluator {
+
+    private final FollowService followService;
+    private final UserService userService;
+    private final SecurityService securityService;
+
+    public boolean canAccessProfile(Long targetUserId) {
+        User targetUser = userService.findByIdOrThrow(targetUserId);
+        Long requesterId = securityService.getCurrentUser().getId();
+
+        if (!targetUser.isPrivate()) {
+            return true;
+        }
+
+        if (targetUserId.equals(requesterId)) {
+            return true;
+        }
+
+        return requesterId != null && followService.isFollowing(requesterId, targetUserId);
+    }
+}
