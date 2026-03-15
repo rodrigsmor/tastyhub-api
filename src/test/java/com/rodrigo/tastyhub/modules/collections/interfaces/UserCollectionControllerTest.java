@@ -9,6 +9,7 @@ import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -255,6 +256,57 @@ class UserCollectionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(101L))
                 .andExpect(jsonPath("$.coverUrl").isEmpty());
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/collections/recipe/{id}/favorite")
+    class FavoriteRecipeTests {
+        @Test
+        @DisplayName("1. Should return 204 when recipe is favorited successfully")
+        void shouldReturn204WhenFavorited() throws Exception {
+            Long recipeId = 1L;
+            doNothing().when(collectionService).favoriteRecipe(recipeId);
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/favorite", recipeId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+            verify(collectionService, times(1)).favoriteRecipe(recipeId);
+        }
+
+        @Test
+        @DisplayName("2. Should return 400 when recipe is already favorited")
+        void shouldReturn400WhenAlreadyFavorited() throws Exception {
+            Long recipeId = 1L;
+            doThrow(new DomainException("Recipe is already in your favorites collection"))
+                .when(collectionService).favoriteRecipe(recipeId);
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/favorite", recipeId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Recipe is already in your favorites collection"));
+        }
+
+        @Test
+        @DisplayName("3. Should return 404 when recipe does not exist")
+        void shouldReturn404WhenRecipeNotFound() throws Exception {
+            Long recipeId = 999L;
+            doThrow(new ResourceNotFoundException("Recipe not found"))
+                .when(collectionService).favoriteRecipe(recipeId);
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/favorite", recipeId))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("4. Should return 400 when ID is invalid (zero or negative)")
+        void shouldReturn400WhenIdIsInvalid() throws Exception {
+            Long invalidId = 0L;
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/favorite", invalidId))
+                .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(collectionService);
         }
     }
 }
