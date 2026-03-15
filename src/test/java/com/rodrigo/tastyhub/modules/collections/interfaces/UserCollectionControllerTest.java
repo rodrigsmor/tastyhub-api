@@ -309,4 +309,55 @@ class UserCollectionControllerTest {
             verifyNoInteractions(collectionService);
         }
     }
+
+    @Nested
+    @DisplayName("PUT /api/collections/recipe/{id}/unfavorite")
+    class UnfavoriteRecipeTests {
+        @Test
+        @DisplayName("1. Should return 204 when recipe is unfavorited successfully")
+        void shouldReturn204WhenUnfavorited() throws Exception {
+            Long recipeId = 1L;
+            doNothing().when(collectionService).unfavoriteRecipe(recipeId);
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/unfavorite", recipeId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+            verify(collectionService, times(1)).unfavoriteRecipe(recipeId);
+        }
+
+        @Test
+        @DisplayName("2. Should return 400 when recipe is not in favorites")
+        void shouldReturn400WhenNotFavorited() throws Exception {
+            Long recipeId = 1L;
+            doThrow(new DomainException("Recipe is not in your favorites collection"))
+                .when(collectionService).unfavoriteRecipe(recipeId);
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/unfavorite", recipeId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Recipe is not in your favorites collection"));
+        }
+
+        @Test
+        @DisplayName("3. Should return 404 when recipe ID does not exist")
+        void shouldReturn404WhenRecipeNotFound() throws Exception {
+            Long recipeId = 999L;
+            doThrow(new ResourceNotFoundException("Recipe not found"))
+                .when(collectionService).unfavoriteRecipe(recipeId);
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/unfavorite", recipeId))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("4. Should return 400 when ID path variable is invalid")
+        void shouldReturn400WhenIdIsNegative() throws Exception {
+            Long invalidId = -5L;
+
+            mockMvc.perform(put("/api/collections/recipe/{id}/unfavorite", invalidId))
+                .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(collectionService);
+        }
+    }
 }
