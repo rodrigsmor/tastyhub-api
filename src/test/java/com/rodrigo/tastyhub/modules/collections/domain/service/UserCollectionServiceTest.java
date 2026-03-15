@@ -372,4 +372,69 @@ class UserCollectionServiceTest {
             );
         }
     }
+
+    @Nested
+    @DisplayName("unfavoriteRecipe Tests")
+    class UnfavoriteRecipeTests {
+        @Test
+        @DisplayName("1. Should remove recipe from favorites successfully")
+        void shouldRemoveRecipeFromFavorites() {
+            Long recipeId = 1L;
+            User mockUser = spy(new User());
+            Recipe mockRecipe = new Recipe();
+            mockRecipe.setId(recipeId);
+
+            UserCollection favorites = new UserCollection();
+            favorites.setName("Favorites");
+
+            Set<Recipe> recipes = new HashSet<>();
+            recipes.add(mockRecipe);
+            favorites.setRecipes(recipes);
+
+            when(securityService.getCurrentUser()).thenReturn(mockUser);
+            doReturn(favorites).when(mockUser).getFavoritesCollection();
+            when(recipeService.findByIdOrThrow(recipeId)).thenReturn(mockRecipe);
+
+            collectionService.unfavoriteRecipe(recipeId);
+
+            assertFalse(favorites.getRecipes().contains(mockRecipe), "The recipe should be removed");
+            verify(collectionRepository, times(1)).saveAndFlush(favorites);
+        }
+
+        @Test
+        @DisplayName("2. Should throw DomainException when recipe is not in favorites")
+        void shouldThrowExceptionWhenNotFavorited() {
+            Long recipeId = 1L;
+            User mockUser = spy(new User());
+            Recipe mockRecipe = new Recipe();
+            mockRecipe.setId(recipeId);
+
+            UserCollection favorites = new UserCollection();
+            favorites.setRecipes(new HashSet<>());
+
+            when(securityService.getCurrentUser()).thenReturn(mockUser);
+            doReturn(favorites).when(mockUser).getFavoritesCollection();
+            when(recipeService.findByIdOrThrow(recipeId)).thenReturn(mockRecipe);
+
+            DomainException ex = assertThrows(DomainException.class, () ->
+                collectionService.unfavoriteRecipe(recipeId)
+            );
+
+            assertEquals("Recipe is not in your favorites collection", ex.getMessage());
+            verify(collectionRepository, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("3. Should throw IllegalStateException when favorites collection is null")
+        void shouldThrowExceptionWhenCollectionNotInitialized() {
+            User mockUser = spy(new User());
+            when(securityService.getCurrentUser()).thenReturn(mockUser);
+            doReturn(null).when(mockUser).getFavoritesCollection();
+            when(recipeService.findByIdOrThrow(anyLong())).thenReturn(new Recipe());
+
+            assertThrows(IllegalStateException.class, () ->
+                collectionService.unfavoriteRecipe(1L)
+            );
+        }
+    }
 }
