@@ -1,7 +1,9 @@
 package com.rodrigo.tastyhub.modules.collections.domain.service;
 
 import com.rodrigo.tastyhub.modules.collections.application.dto.request.ListCollectionQuery;
+import com.rodrigo.tastyhub.modules.collections.application.dto.request.UserCollectionRequest;
 import com.rodrigo.tastyhub.modules.collections.application.dto.response.CollectionPagination;
+import com.rodrigo.tastyhub.modules.collections.application.dto.response.UserCollectionResponseDto;
 import com.rodrigo.tastyhub.modules.collections.domain.model.CollectionSortBy;
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.collections.domain.repository.UserCollectionRepository;
@@ -9,8 +11,10 @@ import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
+import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,6 +29,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -48,6 +53,9 @@ class UserCollectionServiceTest {
     private UserService userService;
 
     @Mock
+    private ImageStorageService imageStorageService;
+
+    @Mock
     private SecurityService securityService;
 
     @InjectMocks
@@ -62,6 +70,7 @@ class UserCollectionServiceTest {
             .id(10L)
             .firstName("John")
             .lastName("Doe")
+            .email("johndoe@example.com")
             .username("chef_johndoe")
             .profilePictureUrl("http://cdn.johndoe.com/profile-url")
             .profilePictureAlt("alternative")
@@ -187,6 +196,109 @@ class UserCollectionServiceTest {
             assertEquals(3, result.metadata().totalPages());
             assertTrue(result.metadata().hasNext());
             assertFalse(result.metadata().hasPrevious());
+        }
+    }
+
+    @Nested
+    @DisplayName("createCollection Tests")
+    class CreateCollectionTests {
+        @Test
+        @DisplayName("1. Should create collection with cover image successfully")
+        void shouldCreateCollectionWithImage() {
+            UserCollectionRequest request = new UserCollectionRequest(
+                "Desserts",
+                "My favs",
+                true,
+                true
+            );
+
+            MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.jpg",
+                "image/jpeg",
+                "data".getBytes()
+            );
+            String altText = "Cover alt text";
+
+            User mockUser = User
+                .builder()
+                .id(10L)
+                .firstName("John")
+                .lastName("Doe")
+                .email("johdoe@example.com")
+                .username("chef_johndoe")
+                .profilePictureUrl("http://cdn.johndoe.com/profile-url")
+                .profilePictureAlt("alternative")
+                .build();
+
+            when(securityService.getCurrentUserOptional()).thenReturn(Optional.of(mockUser));
+            when(imageStorageService.storeImage(any())).thenReturn("stored_filename.jpg");
+            when(collectionRepository.save(any(UserCollection.class))).thenAnswer(i -> {
+                UserCollection c = i.getArgument(0);
+                c.setId(500L);
+                return c;
+            });
+
+            UserCollectionResponseDto result = collectionService.createCollection(request, file, altText);
+
+            assertNotNull(result);
+            verify(imageStorageService, times(1)).storeImage(file);
+            verify(collectionRepository).save(argThat(c ->
+                c.getName().equals("Desserts") &&
+                c.getCoverUrl().equals("stored_filename.jpg") &&
+                c.getUser().equals(mockUser)
+            ));
+        }
+
+        @Test
+        @DisplayName("2. Should create collection without image when file is null")
+        void shouldCreateCollectionWithoutImage() {
+            User mockUser = User
+                .builder()
+                .id(10L)
+                .firstName("John")
+                .lastName("Doe")
+                .email("johdoe@example.com")
+                .username("chef_johndoe")
+                .profilePictureUrl("http://cdn.johndoe.com/profile-url")
+                .profilePictureAlt("alternative")
+                .build();
+
+            UserCollectionRequest request = new UserCollectionRequest(
+                "No Image",
+                "Desc",
+                false,
+                true
+            );
+            when(securityService.getCurrentUserOptional()).thenReturn(Optional.of(mockUser));
+            when(collectionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+            collectionService.createCollection(request, null, null);
+
+            verifyNoInteractions(imageStorageService);
+            verify(collectionRepository).save(argThat(c -> c.getCoverUrl() == null));
+        }
+
+        @Test
+        @DisplayName("3. Should throw UnauthorizedException when user is not logged in")
+        void shouldThrowUnauthorizedWhenNoUser() {
+            when(securityService.getCurrentUserOptional()).thenReturn(Optional.empty());
+
+            assertThrows(UnauthorizedException.class, () ->
+                collectionService.createCollection(
+                    new UserCollectionRequest(
+                        "X",
+                        "Y",
+                        true,
+                        true
+                    ),
+                    null,
+                    null
+                )
+            );
+
+            verifyNoInteractions(collectionRepository);
+            verifyNoInteractions(imageStorageService);
         }
     }
 }
