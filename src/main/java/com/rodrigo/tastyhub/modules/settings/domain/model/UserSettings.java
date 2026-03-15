@@ -43,12 +43,12 @@ public class UserSettings {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "profile_visibility")
-    private VisibilityEnum profileVisibility = VisibilityEnum.PUBLIC;
+    private ProfileVisibility profileVisibility = ProfileVisibility.PUBLIC;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "recipe_visibility_default")
-    private VisibilityEnum recipeVisibilityDefault = VisibilityEnum.PUBLIC;
+    private ProfileVisibility recipeVisibilityDefault = ProfileVisibility.PUBLIC;
 
     @Builder.Default
     @Column(name = "show_birthday")
