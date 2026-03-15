@@ -1,8 +1,12 @@
 package com.rodrigo.tastyhub.modules.collections.interfaces;
 
 import com.rodrigo.tastyhub.modules.collections.application.dto.request.ListCollectionQuery;
+import com.rodrigo.tastyhub.modules.collections.application.dto.request.UserCollectionRequest;
 import com.rodrigo.tastyhub.modules.collections.application.dto.response.CollectionPagination;
+import com.rodrigo.tastyhub.modules.collections.application.dto.response.UserCollectionResponseDto;
 import com.rodrigo.tastyhub.modules.collections.domain.service.UserCollectionService;
+import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
+import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
@@ -13,10 +17,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+
+import static org.mockito.Mockito.*;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
+import static org.hamcrest.Matchers.containsString;
 
 import static org.mockito.Mockito.*;
 
@@ -24,6 +36,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
+import static org.mockito.ArgumentMatchers.*;
+
+import static org.hamcrest.Matchers.containsString;
+
+import static org.mockito.Mockito.*;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 @WebMvcTest(UserCollectionController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class UserCollectionControllerTest {
@@ -104,6 +132,129 @@ class UserCollectionControllerTest {
             mockMvc.perform(get("/api/collections/user/{id}", userId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("User does not exist or could not be found"));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/collections")
+    class CreateCollectionTests {
+        @Test
+        @DisplayName("1. Should return 201 when collection is created with image")
+        void shouldCreateCollectionSuccessfully() throws Exception {
+            User author = User
+                .builder()
+                .id(10L)
+                .firstName("John")
+                .lastName("Doe")
+                .email("johndoe@example.com")
+                .username("chef_johndoe")
+                .profilePictureUrl("http://cdn.johndoe.com/profile-url")
+                .profilePictureAlt("alternative")
+                .build();
+
+            UserCollectionResponseDto responseDto = new UserCollectionResponseDto(
+                100L,
+                "Desserts",
+                "My favorites",
+                "/path/to/img.jpg",
+                "Alt text",
+                true,
+                true,
+                false,
+                true,
+                10,
+                0L,
+                0L,
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                UserMapper.toSummary(author)
+            );
+
+            MockMultipartFile file = new MockMultipartFile(
+                "cover",
+                "cover.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "image-data".getBytes()
+            );
+
+            MockMultipartFile altText = new MockMultipartFile(
+                "alternative_text",
+                "",
+                MediaType.TEXT_PLAIN_VALUE,
+                "Accessibility text".getBytes()
+            );
+
+            when(collectionService.createCollection(any(UserCollectionRequest.class), any(), anyString()))
+                .thenReturn(responseDto);
+
+            mockMvc.perform(multipart("/api/collections")
+                .file(file)
+                .file(altText)
+                .param("name", "Desserts")
+                .param("description", "My favorites")
+                .param("isPublic", "true")
+                .param("isFixed", "false")
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", containsString("/api/collections/100")))
+                .andExpect(jsonPath("$.id").value(100L))
+                .andExpect(jsonPath("$.name").value("Desserts"));
+        }
+
+        @Test
+        @DisplayName("2. Should return 400 when name is missing (Validation)")
+        void shouldReturn400WhenNameIsInvalid() throws Exception {
+            mockMvc.perform(multipart("/api/collections")
+                .param("description", "Only description")
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(collectionService);
+        }
+
+        @Test
+        @DisplayName("3. Should return 201 when image is optional and not provided")
+        void shouldCreateCollectionWithoutImage() throws Exception {
+            User author = User
+                .builder()
+                .id(10L)
+                .firstName("John")
+                .lastName("Doe")
+                .email("johndoe@example.com")
+                .username("chef_johndoe")
+                .profilePictureUrl("http://cdn.johndoe.com/profile-url")
+                .profilePictureAlt("alternative")
+                .build();
+
+            UserCollectionResponseDto responseDto = new UserCollectionResponseDto(
+                101L,
+                "Salads",
+                null,
+                null,
+                null,
+                true,
+                false,
+                false,
+                true,
+                10,
+                0L,
+                0L,
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                UserMapper.toSummary(author)
+            );
+
+            when(collectionService.createCollection(any(), eq(null), eq(null)))
+                .thenReturn(responseDto);
+
+            mockMvc.perform(multipart("/api/collections")
+                .param("name", "Salads")
+                .param("isPublic", "true")
+                .param("isFixed", "false")
+                .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(101L))
+                .andExpect(jsonPath("$.coverUrl").isEmpty());
         }
     }
 }
