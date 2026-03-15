@@ -2,6 +2,7 @@ package com.rodrigo.tastyhub.modules.user.domain.model;
 
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
+import com.rodrigo.tastyhub.modules.settings.domain.model.ProfileVisibility;
 import com.rodrigo.tastyhub.modules.settings.domain.model.UserSettings;
 import com.rodrigo.tastyhub.modules.social.domain.model.Follow;
 import com.rodrigo.tastyhub.modules.social.domain.model.FollowId;
@@ -151,6 +152,10 @@ public class User {
         UserSettings settings = new UserSettings();
         settings.setUser(this);
         this.settings = settings;
+    }
+
+    public Boolean isPrivate() {
+        return this.settings.getProfileVisibility() == ProfileVisibility.PRIVATE;
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
