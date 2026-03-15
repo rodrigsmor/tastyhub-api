@@ -8,11 +8,13 @@ import com.rodrigo.tastyhub.modules.collections.domain.model.CollectionSortBy;
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.collections.domain.repository.UserCollectionRepository;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
+import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +35,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,6 +56,9 @@ class UserCollectionServiceTest {
 
     @Mock
     private SecurityService securityService;
+
+    @Mock
+    private RecipeService recipeService;
 
     @InjectMocks
     private UserCollectionService collectionService;
@@ -299,6 +301,75 @@ class UserCollectionServiceTest {
 
             verifyNoInteractions(collectionRepository);
             verifyNoInteractions(imageStorageService);
+        }
+    }
+
+    @Nested
+    @DisplayName("favoriteRecipe Tests")
+    class FavoriteRecipeTests {
+        @Test
+        @DisplayName("1. Should add recipe to favorites successfully")
+        void shouldAddRecipeToFavorites() {
+            Long recipeId = 1L;
+            User mockUser = spy(new User());
+            Recipe mockRecipe = new Recipe();
+            mockRecipe.setId(recipeId);
+
+            UserCollection favorites = new UserCollection();
+            favorites.setName("Favorites");
+            favorites.setRecipes(new HashSet<>());
+
+            when(securityService.getCurrentUser()).thenReturn(mockUser);
+
+            doReturn(favorites).when(mockUser).getFavoritesCollection();
+
+            when(recipeService.findByIdOrThrow(recipeId)).thenReturn(mockRecipe);
+
+            collectionService.favoriteRecipe(recipeId);
+
+            assertTrue(favorites.getRecipes().contains(mockRecipe));
+            verify(collectionRepository, times(1)).saveAndFlush(favorites);
+        }
+
+        @Test
+        @DisplayName("2. Should throw DomainException when recipe is already favorited")
+        void shouldThrowExceptionWhenAlreadyFavorited() {
+            Long recipeId = 1L;
+            User mockUser = spy(new User());
+            Recipe mockRecipe = new Recipe();
+            mockRecipe.setId(recipeId);
+
+            UserCollection favorites = new UserCollection();
+            favorites.setRecipes(Set.of(mockRecipe));
+
+            when(securityService.getCurrentUser()).thenReturn(mockUser);
+
+            doReturn(favorites).when(mockUser).getFavoritesCollection();
+
+            when(recipeService.findByIdOrThrow(recipeId)).thenReturn(mockRecipe);
+
+            DomainException ex = assertThrows(DomainException.class, () ->
+                collectionService.favoriteRecipe(recipeId)
+            );
+
+            assertEquals("Recipe is already in your favorites collection", ex.getMessage());
+            verify(collectionRepository, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("3. Should throw IllegalStateException when favorites collection is null")
+        void shouldThrowExceptionWhenCollectionNotInitialized() {
+            User mockUser = spy(new User());
+
+            when(securityService.getCurrentUser()).thenReturn(mockUser);
+
+            doReturn(null).when(mockUser).getFavoritesCollection();
+
+            when(recipeService.findByIdOrThrow(anyLong())).thenReturn(new Recipe());
+
+            assertThrows(IllegalStateException.class, () ->
+                collectionService.favoriteRecipe(1L)
+            );
         }
     }
 }
