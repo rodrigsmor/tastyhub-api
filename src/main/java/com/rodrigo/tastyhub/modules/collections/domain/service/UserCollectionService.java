@@ -172,6 +172,7 @@ public class UserCollectionService {
     }
 
     @RequiresVerification
+    @Transactional
     public void addRecipeToCollection(
         Long collectionId,
         Long recipeId
@@ -190,11 +191,28 @@ public class UserCollectionService {
         collectionRepository.saveAndFlush(collection);
     }
 
+    @RequiresVerification
+    @Transactional
     public void removeRecipeFromCollection(
         Long collectionId,
         Long recipeId
     ) {
-        // building
+        User user = securityService.getCurrentUser();
+        Recipe recipe = recipeService.findByIdOrThrow(recipeId);
+
+        UserCollection collection = this.findByIdOrThrow(collectionId);
+
+        if (!collection.getRecipes().contains(collection)) {
+            throw new DomainException("Recipe is not in this collection");
+        }
+
+        if (!collection.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException("You are not permitted to remove recipe from this collection");
+        }
+
+        collection.removeRecipe(recipe);
+
+        collectionRepository.saveAndFlush(collection);
     }
 
     private CollectionCounts getCollectionCountsById(Long collectionId) {
