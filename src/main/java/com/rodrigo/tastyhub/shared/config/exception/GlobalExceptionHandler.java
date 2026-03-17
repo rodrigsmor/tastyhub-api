@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -138,7 +139,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleRequiredHeader(ServletRequestBindingException ex) {
         ErrorResponseDto error = new ErrorResponseDto(
             "Required header or parameter is missing: " + ex.getMessage(),
-            HttpStatus.UNAUTHORIZED.value(),
+            HttpStatus.BAD_REQUEST.value(),
             LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -161,12 +162,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleDomainException(DomainException ex) {
         ErrorResponseDto error = new ErrorResponseDto(
             ex.getMessage(),
-            HttpStatus.UNAUTHORIZED.value(),
+            HttpStatus.BAD_REQUEST.value(),
             LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponseDto> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        ErrorResponseDto error = new ErrorResponseDto(
+            ex.getMessage(),
+            HttpStatus.UNAUTHORIZED.value(),
+            LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleResourceNotFoundException(ResourceNotFoundException ex) {
