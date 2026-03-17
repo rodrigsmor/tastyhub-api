@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.rodrigo.tastyhub.modules.collections.infrastructure.persistence.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
@@ -178,7 +179,15 @@ public class UserCollectionService {
         User user = securityService.getCurrentUser();
         Recipe recipe = recipeService.findByIdOrThrow(recipeId);
 
-        UserCollection userCollection = this.findByIdOrThrow(recipeId);
+        UserCollection collection = this.findByIdOrThrow(collectionId);
+
+        if (!collection.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException("You are not permitted to add recipe to this collection");
+        }
+
+        collection.addRecipe(recipe);
+
+        collectionRepository.saveAndFlush(collection);
     }
 
     public void removeRecipeFromCollection(
