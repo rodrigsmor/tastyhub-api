@@ -48,6 +48,12 @@ public class UserCollectionService {
     private final UserCollectionRepository collectionRepository;
 
     @Transactional
+    public UserCollection findByIdOrThrow(Long collectionId) {
+        return collectionRepository.findById(collectionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Collection was not found"));
+    }
+
+    @Transactional
     public CollectionPagination listCollectionsByUserId(Long userId, ListCollectionQuery queries) {
         if (!userService.existsById(userId)) {
             throw new ResourceNotFoundException("User does not exist or could not be found");
@@ -164,11 +170,22 @@ public class UserCollectionService {
         collectionRepository.saveAndFlush(favoritesCollection);
     }
 
+    @RequiresVerification
     public void addRecipeToCollection(
         Long collectionId,
-        Long recipeid
+        Long recipeId
     ) {
+        User user = securityService.getCurrentUser();
+        Recipe recipe = recipeService.findByIdOrThrow(recipeId);
 
+        UserCollection userCollection = this.findByIdOrThrow(recipeId);
+    }
+
+    public void removeRecipeFromCollection(
+        Long collectionId,
+        Long recipeId
+    ) {
+        // building
     }
 
     private CollectionCounts getCollectionCountsById(Long collectionId) {
