@@ -19,8 +19,8 @@ public class CollectionSpecifications {
             if (StringUtils.hasText(criteria.query())) {
                 String searchPattern = "%" + criteria.query().toLowerCase() + "%";
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), searchPattern),
-                        cb.like(cb.lower(root.get("description")), searchPattern)
+                    cb.like(cb.lower(root.get("name")), searchPattern),
+                    cb.like(cb.lower(root.get("description")), searchPattern)
                 ));
             }
 

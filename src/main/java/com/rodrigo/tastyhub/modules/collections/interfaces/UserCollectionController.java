@@ -6,6 +6,7 @@ import com.rodrigo.tastyhub.modules.collections.application.dto.response.Collect
 import com.rodrigo.tastyhub.modules.collections.application.dto.response.UserCollectionResponseDto;
 import com.rodrigo.tastyhub.modules.collections.domain.service.UserCollectionService;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresProfileAccess;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -88,10 +89,11 @@ public class UserCollectionController {
             )
         )
     })
-    @GetMapping("/user/{id}")
+    @GetMapping("/user/{userId}")
+    @RequiresProfileAccess
     public ResponseEntity<CollectionPagination> listCollectionsByUserId(
         @Parameter(description = "ID of the user", required = true)
-        @PathVariable("id")
+        @PathVariable("userId")
         @Min(value = 1, message = "The User ID must be a positive number")
         Long userId,
 
@@ -162,7 +164,7 @@ public class UserCollectionController {
         @ApiResponse(responseCode = "404", description = "Recipe not found")
     })
     @PutMapping("/recipe/{id}/unfavorite")
-    public ResponseEntity<Void> removeRecipeToFavorites(
+    public ResponseEntity<Void> removeRecipeFromFavorites(
         @Parameter(description = "ID of the recipe to unfavorite", required = true)
         @PathVariable("id")
         @Min(value = 1, message = "The recipe ID must be a positive number")

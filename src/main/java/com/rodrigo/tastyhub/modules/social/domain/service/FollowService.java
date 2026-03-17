@@ -10,6 +10,10 @@ public class FollowService {
 
     private final FollowRepository followRepository;
 
+    public boolean isFollowing(Long followerId, Long followingId) {
+        return followRepository.existsByIdFollowerIdAndIdFollowingId(followerId, followingId);
+    }
+
     public long getFollowersCount(Long userId) {
         return followRepository.countByIdFollowingId(userId);
     }
