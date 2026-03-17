@@ -164,6 +164,13 @@ public class UserCollectionService {
         collectionRepository.saveAndFlush(favoritesCollection);
     }
 
+    public void addRecipeToCollection(
+        Long collectionId,
+        Long recipeid
+    ) {
+
+    }
+
     private CollectionCounts getCollectionCountsById(Long collectionId) {
         return collectionRepository.getCollectionCountsById(collectionId)
             .orElse(new CollectionCounts(0, 0));
@@ -185,5 +192,4 @@ public class UserCollectionService {
             ? Sort.by(field).ascending()
             : Sort.by(field).descending();
     }
-
 }
