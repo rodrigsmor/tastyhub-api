@@ -9,23 +9,26 @@ import org.springframework.stereotype.Component;
 @Component("userSecurity")
 @RequiredArgsConstructor
 public class UserSecurityEvaluator {
-
     private final FollowService followService;
     private final UserService userService;
     private final SecurityService securityService;
 
     public boolean canAccessProfile(Long targetUserId) {
         User targetUser = userService.findByIdOrThrow(targetUserId);
-        Long requesterId = securityService.getCurrentUser().getId();
 
         if (!targetUser.isPrivate()) {
             return true;
         }
 
-        if (targetUserId.equals(requesterId)) {
-            return true;
+        Long requesterId = securityService.getCurrentUserOptional()
+            .map(User::getId)
+            .orElse(null);
+
+        if (requesterId == null) {
+            return false;
         }
 
-        return requesterId != null && followService.isFollowing(requesterId, targetUserId);
+        return targetUserId.equals(requesterId) || followService.isFollowing(requesterId, targetUserId);
     }
+
 }
