@@ -6,6 +6,7 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,6 +23,16 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponseDto> handleUnauthorized(BadCredentialsException ex) {
+        ErrorResponseDto error = new ErrorResponseDto(
+            ex.getMessage(),
+            HttpStatus.UNAUTHORIZED.value(),
+            LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleUAuthenticationCredentialsNotFoundException(AuthenticationCredentialsNotFoundException ex) {
         ErrorResponseDto error = new ErrorResponseDto(
             ex.getMessage(),
             HttpStatus.UNAUTHORIZED.value(),
