@@ -6,6 +6,7 @@ import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -32,8 +33,8 @@ public class FollowController {
     @Operation(
         summary = "Follow a user",
         description = """
-            Establishes a follow relationship between the authenticated user and the target user. 
-            The request will fail if the target user does not exist, if the users are already connected, 
+            Establishes a follow relationship between the authenticated user and the target user.
+            The request will fail if the target user does not exist, if the users are already connected,
             or if a user attempts to follow themselves.
         """
     )
@@ -45,17 +46,53 @@ public class FollowController {
         @ApiResponse(
             responseCode = "400",
             description = "Invalid request (e.g., self-following or already following)",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                    value = """
+                        {
+                          "message": "You are already following this user",
+                          "status": 400,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
         ),
         @ApiResponse(
             responseCode = "401",
             description = "Unauthorized - User must be logged in",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "Jwt was expired or incorrect",
+                          "status": 401,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
         ),
         @ApiResponse(
             responseCode = "404",
             description = "Target user not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "The user provided cannot be found",
+                          "status": 404,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
         )
     })
     @PutMapping("/{followingId}/follow")
@@ -68,6 +105,7 @@ public class FollowController {
         this.followUserUseCase.execute(followingId);
         return ResponseEntity.noContent().build();
     }
+
     @Operation(
         summary = "Unfollow a user",
         description = """
@@ -78,23 +116,55 @@ public class FollowController {
     )
     @ApiResponses({
         @ApiResponse(
-            responseCode = "204",
-            description = "User unfollowed successfully"
-        ),
-        @ApiResponse(
             responseCode = "400",
-            description = "Invalid request (e.g., trying to unfollow someone you don't follow)",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+            description = "Invalid request (e.g., self-following or already following)",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "You are already following this user",
+                          "status": 400,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
         ),
         @ApiResponse(
             responseCode = "401",
             description = "Unauthorized - User must be logged in",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "Jwt was expired or incorrect",
+                          "status": 401,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
         ),
         @ApiResponse(
             responseCode = "404",
             description = "Target user not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                value = """
+                        {
+                          "message": "The user provided cannot be found",
+                          "status": 404,
+                          "timestamp": "2026-08-15T13:15:36"
+                        }
+                    """
+                )
+            )
         )
     })
     @DeleteMapping("/{followingId}/unfollow")
