@@ -12,9 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RecipeSpecification {
-    public static Specification<Recipe> withFilters(ListRecipesQuery query) {
+    public static Specification<Recipe> withFilters(ListRecipesQuery query, Long collectionId) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (collectionId != null) {
+                Join<Recipe, Object> collectionsJoin = root.join("collections");
+                predicates.add(cb.equal(collectionsJoin.get("id"), collectionId));
+            }
 
             if (query.categories() != null && !query.categories().isEmpty()) {
                 predicates.add(root.get("category").in(query.categories()));
