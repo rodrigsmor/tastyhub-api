@@ -49,7 +49,7 @@ public class UserService {
 
     public User findByIdOrThrow(Long userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("The user provided cannot be found"));
     }
 
     @Transactional
