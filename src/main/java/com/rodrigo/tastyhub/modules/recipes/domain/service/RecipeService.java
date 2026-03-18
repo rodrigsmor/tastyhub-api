@@ -108,7 +108,38 @@ public class RecipeService {
         );
 
         Page<Recipe> page = recipeRepository.findAll(
-            RecipeSpecification.withFilters(request),
+            RecipeSpecification.withFilters(request, null),
+            pageable
+        );
+
+        List<SummaryRecipeDto> recipes = page.getContent()
+            .stream()
+            .map(RecipeMapper::toSummaryDto)
+            .toList();
+
+        PaginationMetadata metadata = new PaginationMetadata(
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalPages(),
+            page.getTotalElements(),
+            request.direction(),
+            page.hasNext(),
+            page.hasPrevious()
+        );
+
+        return new RecipePagination(recipes, metadata);
+    }
+
+    @Transactional
+    public RecipePagination listRecipesByCollection(Long collectionId, ListRecipesQuery request) {
+        Pageable pageable = PageRequest.of(
+            request.page(),
+            request.size(),
+            buildSort(request.sortBy(), request.direction())
+        );
+
+        Page<Recipe> page = recipeRepository.findAll(
+            RecipeSpecification.withFilters(request, collectionId),
             pageable
         );
 
@@ -310,6 +341,4 @@ public class RecipeService {
             ? Sort.by(field).ascending()
             : Sort.by(field).descending();
     }
-
-    // CREATE, READ, UPDATE, DELETE
 }
