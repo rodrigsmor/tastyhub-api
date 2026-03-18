@@ -78,7 +78,7 @@ public class UserService {
         User user = findByIdOrThrow(userId);
 
         long articleCount = articleService.getArticlesCountByUserId(userId);
-        long recipeCount = recipeService.getRecipesCountByUserId(userId);
+        long recipeCount = recipeService.getCountByUserId(userId);
         long followersCount = followService.getFollowersCount(userId);
         long followingCount = followService.getFollowingCount(userId);
 
