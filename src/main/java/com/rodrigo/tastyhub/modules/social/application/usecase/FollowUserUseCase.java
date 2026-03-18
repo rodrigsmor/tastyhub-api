@@ -4,7 +4,8 @@ import com.rodrigo.tastyhub.modules.social.domain.service.FollowService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
-import jakarta.transaction.Transactional;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,10 @@ public class FollowUserUseCase {
     @Transactional
     public void execute(Long followingId) {
         User followerUser = securityService.getCurrentUser();
+
+        if (followerUser.getId().equals(followingId)) {
+            throw new DomainException("You cannot follow yourself");
+        }
 
         User targetUser = userService.findByIdOrThrow(followingId);
 
