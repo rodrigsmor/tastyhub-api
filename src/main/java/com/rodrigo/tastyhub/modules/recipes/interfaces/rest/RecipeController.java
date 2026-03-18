@@ -153,6 +153,21 @@ public class RecipeController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/collections/{collectionId}")
+    public ResponseEntity<RecipePagination> listRecipesByCollection(
+        @Parameter(description = "ID of the collection to retrieve recipes", required = true, example = "1")
+        @PathVariable("collectionId")
+        @Min(value = 1, message = "The collection ID must be a positive number")
+        Long collectionId,
+
+        @ParameterObject
+        @Valid
+        ListRecipesQuery request
+    ) {
+        RecipePagination response = this.recipeService.listRecipesByCollection(collectionId, request);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(
         summary = "Create a new recipe",
         security = { @SecurityRequirement(name = "bearerAuth") },
