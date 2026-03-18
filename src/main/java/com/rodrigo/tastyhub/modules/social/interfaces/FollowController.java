@@ -1,6 +1,7 @@
 package com.rodrigo.tastyhub.modules.social.interfaces;
 
 import com.rodrigo.tastyhub.modules.social.application.usecase.FollowUserUseCase;
+import com.rodrigo.tastyhub.modules.social.application.usecase.UnfollowUserUseCase;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,10 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(
     name = "Follows",
@@ -24,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/follows")
 public class FollowController {
     private final FollowUserUseCase followUserUseCase;
+    private final UnfollowUserUseCase unfollowUserUseCase;
 
-    public FollowController(FollowUserUseCase userUseCase) {
+    public FollowController(FollowUserUseCase userUseCase, UnfollowUserUseCase unfollowUserUseCase) {
         this.followUserUseCase = userUseCase;
+        this.unfollowUserUseCase = unfollowUserUseCase;
     }
 
     @Operation(
@@ -66,6 +66,45 @@ public class FollowController {
         Long followingId
     ) {
         this.followUserUseCase.execute(followingId);
+        return ResponseEntity.noContent().build();
+    }
+    @Operation(
+        summary = "Unfollow a user",
+        description = """
+            Terminates the follow relationship between the authenticated user and the target user. 
+            The request will fail if the target user does not exist or if the authenticated user 
+            is not currently following them.
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "204",
+            description = "User unfollowed successfully"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request (e.g., trying to unfollow someone you don't follow)",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - User must be logged in",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Target user not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        )
+    })
+    @DeleteMapping("/{followingId}/unfollow")
+    public ResponseEntity<Void> unfollowUser(
+        @Parameter(description = "ID of the user", required = true)
+        @PathVariable("followingId")
+        @Min(value = 1, message = "The User ID must be a positive number")
+        Long followingId
+    ) {
+        this.unfollowUserUseCase.execute(followingId);
         return ResponseEntity.noContent().build();
     }
 }
