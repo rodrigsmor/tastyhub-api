@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
+import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.*;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
@@ -21,6 +22,7 @@ import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
+import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -99,8 +101,11 @@ public class RecipeService {
         return RecipeMapper.toFullRecipeDto(savedRecipe);
     }
 
-    @Transactional
-    public RecipePagination listRecipes(ListRecipesQuery request) {
+    public RecipePagination getRecipesList(
+        ListRecipesQuery request,
+        @Nullable User owner,
+        @Nullable UserCollection collection
+    ) {
         Pageable pageable = PageRequest.of(
             request.page(),
             request.size(),
@@ -108,38 +113,10 @@ public class RecipeService {
         );
 
         Page<Recipe> page = recipeRepository.findAll(
-            RecipeSpecification.withFilters(request, null),
-            pageable
-        );
-
-        List<SummaryRecipeDto> recipes = page.getContent()
-            .stream()
-            .map(RecipeMapper::toSummaryDto)
-            .toList();
-
-        PaginationMetadata metadata = new PaginationMetadata(
-            page.getNumber(),
-            page.getSize(),
-            page.getTotalPages(),
-            page.getTotalElements(),
-            request.direction(),
-            page.hasNext(),
-            page.hasPrevious()
-        );
-
-        return new RecipePagination(recipes, metadata);
-    }
-
-    @Transactional
-    public RecipePagination listRecipesByCollection(Long collectionId, ListRecipesQuery request) {
-        Pageable pageable = PageRequest.of(
-            request.page(),
-            request.size(),
-            buildSort(request.sortBy(), request.direction())
-        );
-
-        Page<Recipe> page = recipeRepository.findAll(
-            RecipeSpecification.withFilters(request, collectionId),
+            RecipeSpecification.withFilters(
+                request,
+                collection == null ? null : collection.getId()
+            ),
             pageable
         );
 
