@@ -9,6 +9,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagin
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeIngredientMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
+import com.rodrigo.tastyhub.modules.recipes.application.usecases.ListRecipesUseCase;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
@@ -61,6 +62,9 @@ class RecipeControllerTest {
 
     @MockitoBean
     private RecipeService recipeService;
+
+    @MockitoBean
+    private ListRecipesUseCase listRecipes;
 
     private Recipe fakeRecipe;
 
@@ -206,7 +210,7 @@ class RecipeControllerTest {
                 )
             );
 
-            when(recipeService.listRecipes(any(ListRecipesQuery.class))).thenReturn(mockPagination);
+            when(listRecipes.execute(any(ListRecipesQuery.class))).thenReturn(mockPagination);
 
             mockMvc.perform(get("/api/recipes")
                     .accept(MediaType.APPLICATION_JSON))
@@ -219,7 +223,7 @@ class RecipeControllerTest {
         @Test
         @DisplayName("2. Should apply filters correctly and return 200")
         void shouldApplyFiltersCorrectly() throws Exception {
-            when(recipeService.listRecipes(any(ListRecipesQuery.class)))
+            when(listRecipes.execute(any(ListRecipesQuery.class)))
                 .thenReturn(new RecipePagination(
                     List.of(),
                     new PaginationMetadata(
@@ -241,7 +245,7 @@ class RecipeControllerTest {
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-            verify(recipeService).listRecipes(argThat(query ->
+            verify(listRecipes).execute(argThat(query ->
                 query.tags().containsAll(List.of("vegan", "pasta")) &&
                 query.minRating() == 4 &&
                 query.size() == 20

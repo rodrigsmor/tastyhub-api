@@ -298,7 +298,7 @@ class RecipeServiceTest {
             when(recipeRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(recipePage);
 
-            RecipePagination result = recipeService.listRecipes(query);
+            RecipePagination result = recipeService.getRecipesList(query, null, null);
 
             assertNotNull(result);
             assertEquals(1, result.recipes().size());
@@ -340,7 +340,7 @@ class RecipeServiceTest {
             when(recipeRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(emptyPage);
 
-            RecipePagination result = recipeService.listRecipes(query);
+            RecipePagination result = recipeService.getRecipesList(query, null, null);
 
             assertTrue(result.recipes().isEmpty());
             assertEquals(0, result.metadata().totalItems());
