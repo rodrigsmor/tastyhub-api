@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.rodrigo.tastyhub.modules.collections.infrastructure.persistence.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,12 @@ public class UserCollectionService {
     private final SecurityService securityService;
     private final ImageStorageService imageStorageService;
     private final UserCollectionRepository collectionRepository;
+
+    @Transactional
+    public UserCollection findByIdOrThrow(Long collectionId) {
+        return collectionRepository.findById(collectionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Collection was not found"));
+    }
 
     @Transactional
     public CollectionPagination listCollectionsByUserId(Long userId, ListCollectionQuery queries) {
@@ -164,6 +171,50 @@ public class UserCollectionService {
         collectionRepository.saveAndFlush(favoritesCollection);
     }
 
+    @RequiresVerification
+    @Transactional
+    public void addRecipeToCollection(
+        Long collectionId,
+        Long recipeId
+    ) {
+        User user = securityService.getCurrentUser();
+        Recipe recipe = recipeService.findByIdOrThrow(recipeId);
+
+        UserCollection collection = this.findByIdOrThrow(collectionId);
+
+        if (!collection.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException("You are not permitted to add recipe to this collection");
+        }
+
+        collection.addRecipe(recipe);
+
+        collectionRepository.saveAndFlush(collection);
+    }
+
+    @RequiresVerification
+    @Transactional
+    public void removeRecipeFromCollection(
+        Long collectionId,
+        Long recipeId
+    ) {
+        User user = securityService.getCurrentUser();
+        Recipe recipe = recipeService.findByIdOrThrow(recipeId);
+
+        UserCollection collection = this.findByIdOrThrow(collectionId);
+
+        if (!collection.getRecipes().contains(collection)) {
+            throw new DomainException("Recipe is not in this collection");
+        }
+
+        if (!collection.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException("You are not permitted to remove recipe from this collection");
+        }
+
+        collection.removeRecipe(recipe);
+
+        collectionRepository.saveAndFlush(collection);
+    }
+
     private CollectionCounts getCollectionCountsById(Long collectionId) {
         return collectionRepository.getCollectionCountsById(collectionId)
             .orElse(new CollectionCounts(0, 0));
@@ -185,5 +236,4 @@ public class UserCollectionService {
             ? Sort.by(field).ascending()
             : Sort.by(field).descending();
     }
-
 }

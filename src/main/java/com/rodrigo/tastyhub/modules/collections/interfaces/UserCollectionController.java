@@ -173,4 +173,95 @@ public class UserCollectionController {
         collectionService.unfavoriteRecipe(recipeId);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+        summary = "Add a recipe to a collection",
+        description = """
+            Adds a specific recipe to a user's collection. 
+            The requester must be the owner of the collection. 
+            Custom collections allow multiple recipes, but duplicate entries are generally ignored.
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "204",
+            description = "Recipe successfully added to the collection"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid ID provided or recipe already exists in the collection",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "You do not have permission to modify this collection",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Collection or Recipe not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        )
+    })
+    @PutMapping("/{collectionId}/recipe/{recipeId}")
+    public ResponseEntity<Void> addRecipeToCollection(
+        @Parameter(description = "ID of the target collection", example = "1", required = true)
+        @PathVariable("collectionId")
+        @Min(value = 1, message = "The collection ID must be a positive number")
+        Long collectionId,
+
+        @Parameter(description = "ID of the recipe to be added", example = "42", required = true)
+        @PathVariable("recipeId")
+        @Min(value = 1, message = "The recipe ID must be a positive number")
+        Long recipeId
+    ) {
+        collectionService.addRecipeToCollection(collectionId, recipeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Remove a recipe from a collection",
+        description = """
+            Removes the association between a specific recipe and a collection. 
+            The requester must be the owner of the collection. 
+            If the recipe is not in the collection, a 404 or 400 error will be returned.
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "204",
+            description = "Recipe successfully removed from the collection"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid ID provided",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "You do not have permission to modify this collection",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Collection or Recipe not found in this collection",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        )
+    })
+    @DeleteMapping("/{collectionId}/recipe/{recipeId}")
+    public ResponseEntity<Void> removeRecipeFromCollection(
+        @Parameter(description = "ID of the target collection", example = "1", required = true)
+        @PathVariable("collectionId")
+        @Min(value = 1, message = "The collection ID must be a positive number")
+        Long collectionId,
+
+        @Parameter(description = "ID of the recipe to be removed", example = "42", required = true)
+        @PathVariable("recipeId")
+        @Min(value = 1, message = "The recipe ID must be a positive number")
+        Long recipeId
+    ) {
+        collectionService.removeRecipeFromCollection(collectionId, recipeId);
+        return ResponseEntity.noContent().build();
+    }
+
 }

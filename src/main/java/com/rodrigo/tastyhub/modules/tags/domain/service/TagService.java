@@ -3,6 +3,7 @@ package com.rodrigo.tastyhub.modules.tags.domain.service;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.repository.TagRepository;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
+import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,16 @@ public class TagService {
 
     public List<Tag> findAllById(Collection<Long> tagIds) {
         return tagRepository.findAllById(tagIds);
+    }
+
+    public List<Tag> syncAll(Collection<Long> tagIds) {
+        List<Tag> tags = this.findAllById(tagIds);
+
+        if (tags.size() != tagIds.size()) {
+            throw new ResourceNotFoundException("One or more provided Tags do not exist.");
+        }
+
+        return tags;
     }
 
     @Transactional

@@ -6,6 +6,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipe
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
+import com.rodrigo.tastyhub.modules.recipes.application.usecases.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
@@ -39,9 +40,26 @@ import java.net.URI;
 @RequestMapping("/api/recipes")
 public class RecipeController {
     private final RecipeService recipeService;
+    private final ListRecipesUseCase listRecipes;
+    private final UpdateRecipeUseCase updateRecipe;
+    private final CreateRecipeUseCase createRecipe;
+    private final GetRecipeByIdUseCase getRecipeById;
+    private final ListRecipesByCollectionUseCase listRecipesByCollection;
 
-    public RecipeController(RecipeService recipeService) {
+    public RecipeController(
+        RecipeService recipeService,
+        ListRecipesUseCase listRecipes,
+        CreateRecipeUseCase createRecipe,
+        GetRecipeByIdUseCase getRecipeById,
+        UpdateRecipeUseCase updateRecipe,
+        ListRecipesByCollectionUseCase listRecipesByCollection
+    ) {
         this.recipeService = recipeService;
+        this.listRecipes = listRecipes;
+        this.createRecipe = createRecipe;
+        this.getRecipeById = getRecipeById;
+        this.updateRecipe = updateRecipe;
+        this.listRecipesByCollection = listRecipesByCollection;
     }
 
     @Operation(
@@ -109,8 +127,8 @@ public class RecipeController {
         @Min(value = 1, message = "The recipe ID must be a positive number")
         Long id
     ) {
-        Recipe response = this.recipeService.findByIdOrThrow(id);
-        return ResponseEntity.ok(RecipeMapper.toFullRecipeDto(response));
+        FullRecipeDto response = this.getRecipeById.execute(id);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
@@ -149,7 +167,22 @@ public class RecipeController {
     public ResponseEntity<RecipePagination> listRecipes(
         @ParameterObject @Valid ListRecipesQuery request
     ) {
-        RecipePagination response = this.recipeService.listRecipes(request);
+        RecipePagination response = this.listRecipes.execute(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/collections/{collectionId}")
+    public ResponseEntity<RecipePagination> listRecipesByCollection(
+        @Parameter(description = "ID of the collection to retrieve recipes", required = true, example = "1")
+        @PathVariable("collectionId")
+        @Min(value = 1, message = "The collection ID must be a positive number")
+        Long collectionId,
+
+        @ParameterObject
+        @Valid
+        ListRecipesQuery request
+    ) {
+        RecipePagination response = this.listRecipesByCollection.execute(collectionId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -180,7 +213,7 @@ public class RecipeController {
     public ResponseEntity<FullRecipeDto> createRecipe(
         @RequestBody @Valid CreateRecipeDto recipeDto
     ) {
-        FullRecipeDto fullRecipeDto = this.recipeService.createRecipe(recipeDto);
+        FullRecipeDto fullRecipeDto = this.createRecipe.execute(recipeDto);
 
         URI uri = ServletUriComponentsBuilder
             .fromCurrentRequest()
@@ -236,7 +269,7 @@ public class RecipeController {
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRecipeDto body
     ) {
-        FullRecipeDto response = this.recipeService.updateRecipeById(id, body);
+        FullRecipeDto response = this.updateRecipe.execute(id, body);
         return ResponseEntity.ok(response);
     }
 

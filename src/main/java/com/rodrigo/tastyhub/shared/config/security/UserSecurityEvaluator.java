@@ -30,5 +30,4 @@ public class UserSecurityEvaluator {
 
         return targetUserId.equals(requesterId) || followService.isFollowing(requesterId, targetUserId);
     }
-
 }

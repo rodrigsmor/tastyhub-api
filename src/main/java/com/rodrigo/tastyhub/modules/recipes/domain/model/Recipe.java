@@ -111,6 +111,12 @@ public class Recipe {
         this.statistics.decrementFavoritesCount();
     }
 
+    public void updateAllTags(List<Tag> tags) {
+        this.getTags().clear();
+
+        this.getTags().addAll(tags);
+    }
+
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
         RecipeIngredient recipeIngredient = RecipeIngredient.builder()
             .recipe(this)

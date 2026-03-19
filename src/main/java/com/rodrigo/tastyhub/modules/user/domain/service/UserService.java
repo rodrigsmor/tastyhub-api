@@ -49,7 +49,7 @@ public class UserService {
 
     public User findByIdOrThrow(Long userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("The user provided cannot be found"));
     }
 
     @Transactional
@@ -78,7 +78,7 @@ public class UserService {
         User user = findByIdOrThrow(userId);
 
         long articleCount = articleService.getArticlesCountByUserId(userId);
-        long recipeCount = recipeService.getRecipesCountByUserId(userId);
+        long recipeCount = recipeService.getCountByUserId(userId);
         long followersCount = followService.getFollowersCount(userId);
         long followingCount = followService.getFollowingCount(userId);
 
