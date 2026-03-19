@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -97,62 +98,35 @@ public class Recipe {
     @UpdateTimestamp
     private OffsetDateTime updatedAt;
 
-    public void incrementFavorites() {
-        if (this.statistics == null) {
-            this.statistics = new RecipeStatistics();
+    public void validateOwnership(Long currentUserId) {
+        if (this.author == null || !this.author.getId().equals(currentUserId)) {
+            throw new ForbiddenException("You are not the author of this recipe and cannot modify it.");
         }
-        this.statistics.incrementFavoritesCount();
     }
 
-    public void decrementFavorites() {
-        if (this.statistics == null) {
-            this.statistics = new RecipeStatistics();
-        }
-        this.statistics.decrementFavoritesCount();
+    public void update(
+        String title,
+        String description,
+        RecipeCategory category,
+        Integer cookTimeMin,
+        Integer cookTimeMax,
+        BigDecimal estimatedCost,
+        Currency currency,
+        List<Tag> tags
+    ) {
+        if (title != null) this.title = title;
+        if (description != null) this.description = description;
+        if (category != null) this.category = category;
+        if (tags != null) this.updateAllTags(tags);
+
+        this.updateMonetaryDetails(estimatedCost, currency);
+        this.updateTiming(cookTimeMin, cookTimeMax);
     }
 
     public void updateAllTags(List<Tag> tags) {
         this.getTags().clear();
 
         this.getTags().addAll(tags);
-    }
-
-    public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
-        RecipeIngredient recipeIngredient = RecipeIngredient.builder()
-            .recipe(this)
-            .ingredient(ingredient)
-            .quantity(quantity)
-            .unit(unit)
-            .build();
-        ingredients.add(recipeIngredient);
-    }
-
-    public void addStep(PreparationStep step) {
-        steps.add(step);
-        step.setRecipe(this);
-    }
-
-    public void addComment(User user, BigDecimal rating, String content) {
-        if (rating == null || rating.compareTo(BigDecimal.ONE) < 0 || rating.compareTo(new BigDecimal("5")) > 0) {
-            throw new IllegalArgumentException("The rating must be between 1 and 5.");
-        }
-
-        Comment comment = Comment.builder()
-            .user(user)
-            .content(content)
-            .rating(rating)
-            .recipe(this)
-            .build();
-
-        this.comments.add(comment);
-
-        updateStatisticRating(rating);
-    }
-
-    public void updateStatisticRating(BigDecimal rating) {
-        if (this.statistics != null) {
-            this.statistics.incrementRating(rating);
-        }
     }
 
     public void updateTiming(Integer newMin, Integer newMax) {
@@ -187,5 +161,57 @@ public class Recipe {
 
         this.estimatedCost = newCost;
         this.currency = newCurrency;
+    }
+
+    public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
+        RecipeIngredient recipeIngredient = RecipeIngredient.builder()
+            .recipe(this)
+            .ingredient(ingredient)
+            .quantity(quantity)
+            .unit(unit)
+            .build();
+        ingredients.add(recipeIngredient);
+    }
+
+    public void addStep(PreparationStep step) {
+        steps.add(step);
+        step.setRecipe(this);
+    }
+
+    public void addComment(User user, BigDecimal rating, String content) {
+        if (rating == null || rating.compareTo(BigDecimal.ONE) < 0 || rating.compareTo(new BigDecimal("5")) > 0) {
+            throw new IllegalArgumentException("The rating must be between 1 and 5.");
+        }
+
+        Comment comment = Comment.builder()
+            .user(user)
+            .content(content)
+            .rating(rating)
+            .recipe(this)
+            .build();
+
+        this.comments.add(comment);
+
+        updateStatisticRating(rating);
+    }
+
+    public void incrementFavorites() {
+        if (this.statistics == null) {
+            this.statistics = new RecipeStatistics();
+        }
+        this.statistics.incrementFavoritesCount();
+    }
+
+    public void decrementFavorites() {
+        if (this.statistics == null) {
+            this.statistics = new RecipeStatistics();
+        }
+        this.statistics.decrementFavoritesCount();
+    }
+
+    public void updateStatisticRating(BigDecimal rating) {
+        if (this.statistics != null) {
+            this.statistics.incrementRating(rating);
+        }
     }
 }
