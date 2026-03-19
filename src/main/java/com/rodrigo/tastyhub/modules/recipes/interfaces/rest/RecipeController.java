@@ -6,6 +6,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipe
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
+import com.rodrigo.tastyhub.modules.recipes.application.usecases.CreateRecipeUseCase;
 import com.rodrigo.tastyhub.modules.recipes.application.usecases.GetRecipeByIdUseCase;
 import com.rodrigo.tastyhub.modules.recipes.application.usecases.ListRecipesByCollectionUseCase;
 import com.rodrigo.tastyhub.modules.recipes.application.usecases.ListRecipesUseCase;
@@ -43,17 +44,20 @@ import java.net.URI;
 public class RecipeController {
     private final RecipeService recipeService;
     private final ListRecipesUseCase listRecipes;
+    private final CreateRecipeUseCase createRecipe;
     private final GetRecipeByIdUseCase getRecipeById;
     private final ListRecipesByCollectionUseCase listRecipesByCollection;
 
     public RecipeController(
         RecipeService recipeService,
         ListRecipesUseCase listRecipes,
+        CreateRecipeUseCase createRecipe,
         GetRecipeByIdUseCase getRecipeById,
         ListRecipesByCollectionUseCase listRecipesByCollection
     ) {
         this.recipeService = recipeService;
         this.listRecipes = listRecipes;
+        this.createRecipe = createRecipe;
         this.getRecipeById = getRecipeById;
         this.listRecipesByCollection = listRecipesByCollection;
     }
@@ -209,7 +213,7 @@ public class RecipeController {
     public ResponseEntity<FullRecipeDto> createRecipe(
         @RequestBody @Valid CreateRecipeDto recipeDto
     ) {
-        FullRecipeDto fullRecipeDto = this.recipeService.createRecipe(recipeDto);
+        FullRecipeDto fullRecipeDto = this.createRecipe.execute(recipeDto);
 
         URI uri = ServletUriComponentsBuilder
             .fromCurrentRequest()
