@@ -45,7 +45,7 @@ public class RecipeService {
     private final IngredientService ingredientService;
     private final ImageStorageService imageStorageService;
 
-    public Long getRecipesCountByUserId(Long userId) {
+    public Long getCountByUserId(Long userId) {
         return recipeRepository.countByAuthorId(userId);
     }
 
@@ -54,103 +54,69 @@ public class RecipeService {
             .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
     }
 
-    @RequiresVerification
-    @Transactional
-    public FullRecipeDto createRecipe(CreateRecipeDto recipeDto) {
-        if (!recipeDto.hasSteps()) {
-            throw new DomainException("Recipe must have at least one step");
-        }
-
-        User user = this.securityService.getCurrentUser();
-
-        Recipe recipe = Recipe
-            .builder()
-            .title(recipeDto.title())
-            .category(recipeDto.category())
-            .description(recipeDto.description())
-            .cookTimeMin(recipeDto.cookTimeMin())
-            .cookTimeMax(recipeDto.cookTimeMax())
-            .author(user)
-            .build();
-
-        if (recipeDto.hasCurrency()) {
-            Currency currency = currencyService.findById(recipeDto.currencyId());
-            recipe.updateMonetaryDetails(recipeDto.estimatedCost(), currency);
-        }
-
-        if (recipeDto.hasTags()) {
-            this.syncTags(recipe, recipeDto.tagIds());
-        }
-
-        recipeDto.steps().forEach(stepDto -> {
-            PreparationStep step = PreparationStep.builder()
-                .stepNumber(stepDto.stepNumber())
-                .instruction(stepDto.instruction())
-                .build();
-
-            recipe.addStep(step);
-        });
-
-        recipeDto.ingredients().forEach(ingredientDto -> {
-            Optional<Ingredient> ingredient = ingredientService.findById(ingredientDto.ingredientId());
-            ingredient.ifPresent(value -> recipe.addIngredient(value, ingredientDto.quantity(), ingredientDto.unit()));
-        });
-
-        Recipe savedRecipe = recipeRepository.save(recipe);
-
-        return RecipeMapper.toFullRecipeDto(savedRecipe);
-    }
-
     public RecipePagination getRecipesList(
         ListRecipesQuery request,
         @Nullable User owner,
         @Nullable UserCollection collection
     ) {
         Pageable pageable = PageRequest.of(
-            request.page(),
-            request.size(),
-            buildSort(request.sortBy(), request.direction())
+                request.page(),
+                request.size(),
+                buildSort(request.sortBy(), request.direction())
         );
 
         Page<Recipe> page = recipeRepository.findAll(
-            RecipeSpecification.withFilters(
-                request,
-                collection == null ? null : collection.getId()
-            ),
-            pageable
+                RecipeSpecification.withFilters(
+                        request,
+                        collection == null ? null : collection.getId()
+                ),
+                pageable
         );
 
         List<SummaryRecipeDto> recipes = page.getContent()
-            .stream()
-            .map(RecipeMapper::toSummaryDto)
-            .toList();
+                .stream()
+                .map(RecipeMapper::toSummaryDto)
+                .toList();
 
         PaginationMetadata metadata = new PaginationMetadata(
-            page.getNumber(),
-            page.getSize(),
-            page.getTotalPages(),
-            page.getTotalElements(),
-            request.direction(),
-            page.hasNext(),
-            page.hasPrevious()
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                request.direction(),
+                page.hasNext(),
+                page.hasPrevious()
         );
 
         return new RecipePagination(recipes, metadata);
     }
 
-    @RequiresVerification
-    @Transactional
-    public void deleteRecipeById(Long id) {
-        Recipe recipe = recipeRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found"));
-
-        Long currentUserId = securityService.getCurrentUser().getId();
-
-        if (!recipe.getAuthor().getId().equals(currentUserId)) {
-            throw new ForbiddenException("You do not have permission to delete this recipe");
+    public Recipe create(Recipe newRecipe) {
+        if (newRecipe.getSteps().isEmpty()) {
+            throw new DomainException("Recipe must have at least one step!");
         }
 
-        recipeRepository.delete(recipe);
+        if (newRecipe.getIngredients().isEmpty()) {
+            throw new DomainException("Recipe must have at least one ingredient!");
+        }
+
+        return recipeRepository.save(newRecipe);
+    }
+
+    public Recipe update(
+        Recipe newRecipe,
+        List<UpdateRecipeIngredientDto> newIngredients,
+        List<UpdatePreparationStepDto> newSteps
+    ) {
+        if (newIngredients != null) {
+            this.syncSteps(newRecipe, newSteps);
+        }
+
+        if (newSteps != null) {
+            this.syncIngredients(newRecipe, newIngredients);
+        }
+
+        return recipeRepository.save(newRecipe);
     }
 
     @RequiresVerification
@@ -182,10 +148,6 @@ public class RecipeService {
 
         if (newData.steps() != null) {
             this.syncSteps(recipe, newData.steps());
-        };
-
-        if (newData.steps() != null) {
-            this.syncSteps(recipe, newData.steps());
         }
 
         if (newData.ingredients() != null) {
@@ -193,6 +155,21 @@ public class RecipeService {
         }
 
         return RecipeMapper.toFullRecipeDto(recipeRepository.save(recipe));
+    }
+
+    @RequiresVerification
+    @Transactional
+    public void deleteRecipeById(Long id) {
+        Recipe recipe = recipeRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found"));
+
+        Long currentUserId = securityService.getCurrentUser().getId();
+
+        if (!recipe.getAuthor().getId().equals(currentUserId)) {
+            throw new ForbiddenException("You do not have permission to delete this recipe");
+        }
+
+        recipeRepository.delete(recipe);
     }
 
     @FileCleanup
