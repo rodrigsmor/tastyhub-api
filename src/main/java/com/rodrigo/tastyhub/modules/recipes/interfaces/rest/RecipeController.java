@@ -6,10 +6,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipe
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
-import com.rodrigo.tastyhub.modules.recipes.application.usecases.CreateRecipeUseCase;
-import com.rodrigo.tastyhub.modules.recipes.application.usecases.GetRecipeByIdUseCase;
-import com.rodrigo.tastyhub.modules.recipes.application.usecases.ListRecipesByCollectionUseCase;
-import com.rodrigo.tastyhub.modules.recipes.application.usecases.ListRecipesUseCase;
+import com.rodrigo.tastyhub.modules.recipes.application.usecases.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
@@ -44,6 +41,7 @@ import java.net.URI;
 public class RecipeController {
     private final RecipeService recipeService;
     private final ListRecipesUseCase listRecipes;
+    private final UpdateRecipeUseCase updateRecipe;
     private final CreateRecipeUseCase createRecipe;
     private final GetRecipeByIdUseCase getRecipeById;
     private final ListRecipesByCollectionUseCase listRecipesByCollection;
@@ -53,12 +51,14 @@ public class RecipeController {
         ListRecipesUseCase listRecipes,
         CreateRecipeUseCase createRecipe,
         GetRecipeByIdUseCase getRecipeById,
+        UpdateRecipeUseCase updateRecipe,
         ListRecipesByCollectionUseCase listRecipesByCollection
     ) {
         this.recipeService = recipeService;
         this.listRecipes = listRecipes;
         this.createRecipe = createRecipe;
         this.getRecipeById = getRecipeById;
+        this.updateRecipe = updateRecipe;
         this.listRecipesByCollection = listRecipesByCollection;
     }
 
@@ -269,7 +269,7 @@ public class RecipeController {
         @PathVariable("id") Long id,
         @RequestBody @Valid UpdateRecipeDto body
     ) {
-        FullRecipeDto response = this.recipeService.updateRecipeById(id, body);
+        FullRecipeDto response = this.updateRecipe.execute(id, body);
         return ResponseEntity.ok(response);
     }
 
