@@ -108,6 +108,8 @@ public class Recipe {
         List<PreparationStep> steps,
         List<RecipeIngredient> ingredients
     ) {
+        init();
+
         this.title = Objects.requireNonNull(title, "Title is required");
         this.description = Objects.requireNonNull(description, "Description is required");
         this.author = Objects.requireNonNull(author, "Author is required");
@@ -125,6 +127,13 @@ public class Recipe {
 
         this.updateTiming(cookTimeMin, cookTimeMax);
         this.updateMonetaryDetails(estimatedCost, currency);
+    }
+
+    public void init() {
+        this.statistics = new RecipeStatistics();
+        this.statistics.setRecipe(this);
+        this.comments = new ArrayList<>();
+        this.media = new ArrayList<>();
     }
 
     public void validateOwnership(Long currentUserId) {
@@ -193,17 +202,21 @@ public class Recipe {
     }
 
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
+        if (this.ingredients == null) this.ingredients = new ArrayList<>();
+
         RecipeIngredient recipeIngredient = RecipeIngredient.builder()
             .recipe(this)
             .ingredient(ingredient)
             .quantity(quantity)
             .unit(unit)
             .build();
-        ingredients.add(recipeIngredient);
+        this.ingredients.add(recipeIngredient);
     }
 
     public void addStep(PreparationStep step) {
-        steps.add(step);
+        if (this.steps == null) this.steps = new ArrayList<>();
+
+        this.steps.add(step);
         step.setRecipe(this);
     }
 
