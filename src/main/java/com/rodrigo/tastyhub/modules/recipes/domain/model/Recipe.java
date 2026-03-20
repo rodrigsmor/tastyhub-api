@@ -12,10 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -97,6 +94,38 @@ public class Recipe {
 
     @UpdateTimestamp
     private OffsetDateTime updatedAt;
+
+    public Recipe(
+        String title,
+        String description,
+        User author,
+        RecipeCategory category,
+        Integer cookTimeMin,
+        Integer cookTimeMax,
+        BigDecimal estimatedCost,
+        Currency currency,
+        List<Tag> tags,
+        List<PreparationStep> steps,
+        List<RecipeIngredient> ingredients
+    ) {
+        this.title = Objects.requireNonNull(title, "Title is required");
+        this.description = Objects.requireNonNull(description, "Description is required");
+        this.author = Objects.requireNonNull(author, "Author is required");
+        this.category = Objects.requireNonNull(category, "Category is required");
+
+        this.tags = (tags != null) ? new HashSet<>(tags) : new HashSet<>();
+
+        steps.forEach(this::addStep);
+
+        ingredients.forEach(ingredient -> this.addIngredient(
+            ingredient.getIngredient(),
+            ingredient.getQuantity(),
+            ingredient.getUnit()
+        ));
+
+        this.updateTiming(cookTimeMin, cookTimeMax);
+        this.updateMonetaryDetails(estimatedCost, currency);
+    }
 
     public void validateOwnership(Long currentUserId) {
         if (this.author == null || !this.author.getId().equals(currentUserId)) {
