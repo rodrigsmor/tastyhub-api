@@ -3,6 +3,8 @@ package com.rodrigo.tastyhub.modules.recipes.domain.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "preparation_steps")
 @Getter
@@ -24,4 +26,9 @@ public class PreparationStep {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recipe_id", nullable = false)
     private Recipe recipe;
+
+    public PreparationStep(Integer stepNumber, String instruction) {
+        this.stepNumber = Objects.requireNonNull(stepNumber, "Step Number is required");
+        this.instruction = Objects.requireNonNull(instruction, "Instruction is required");
+    }
 }
