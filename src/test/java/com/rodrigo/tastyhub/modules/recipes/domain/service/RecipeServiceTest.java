@@ -1,15 +1,10 @@
 package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.*;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
-import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
-import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeIngredientMapper;
-import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
-import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
@@ -38,7 +33,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,16 +41,10 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 class RecipeServiceTest {
     @Mock
-    private TagService tagService;
-
-    @Mock
     private SecurityService securityService;
 
     @Mock
     private RecipeRepository recipeRepository;
-
-    @Mock
-    private CurrencyService currencyService;
 
     @Mock
     private ImageStorageService imageStorageService;
@@ -66,9 +54,70 @@ class RecipeServiceTest {
 
     private Recipe fakeRecipe;
 
+    @BeforeEach
+    void setup() {
+//        MockitoAnnotations.openMocks(this);
+
+        fakeRecipe = new Recipe();
+        fakeRecipe.setId(1L);
+        fakeRecipe.setTitle("Fake Recipe");
+        fakeRecipe.setDescription("waved about helplessly as he looked. What's happened to me? he thought.");
+        fakeRecipe.setCookTimeMin(0);
+        fakeRecipe.setCookTimeMax(10);
+        fakeRecipe.setAuthor(new User());
+        fakeRecipe.setCoverUrl("http://example.com");
+        fakeRecipe.setCoverAlt("Alternative");
+        fakeRecipe.setEstimatedCost(new BigDecimal("10.5"));
+
+        RecipeStatistics recipeStatistics = new RecipeStatistics();
+
+        recipeStatistics.incrementRating(new BigDecimal("4.5"));
+        recipeStatistics.setFavoritesCount(0);
+
+        fakeRecipe.setStatistics(recipeStatistics);
+
+        PreparationStep firstStep = PreparationStep.builder().id(1L).stepNumber(0).instruction("First Step").build();
+        PreparationStep secondStep = PreparationStep.builder().id(2L).stepNumber(1).instruction("Second Step").build();
+        PreparationStep thirdStep = PreparationStep.builder().id(3L).stepNumber(2).instruction("Third Step").build();
+
+        List<PreparationStep> steps = new ArrayList<>(List.of(firstStep, secondStep, thirdStep));
+
+        fakeRecipe.setSteps(steps);
+
+        Currency currency = new Currency(
+            (short) 1,
+            "USD",
+            "American Dollar",
+            "$"
+        );
+
+
+
+        fakeRecipe.setCurrency(currency);
+        fakeRecipe.setIngredients(
+            new ArrayList<>(
+                List.of(
+                    new RecipeIngredient(
+                        1L,
+                        fakeRecipe,
+                        new Ingredient(1L, "Ingredient"),
+                        new BigDecimal("2.0"),
+                        IngredientUnitEnum.GRAM
+                    )
+                )
+            )
+        );
+        fakeRecipe.setMedia(new ArrayList<>());
+        fakeRecipe.setComments(new ArrayList<>());
+        fakeRecipe.setTags(new HashSet<>());
+        fakeRecipe.setCategory(RecipeCategory.SNACK);
+        fakeRecipe.setCreatedAt(OffsetDateTime.now());
+        fakeRecipe.setUpdatedAt(OffsetDateTime.now());
+    }
+
     @Nested
-    @DisplayName("Tests for getRecipesCountByUserId Method")
-    class getRecipesCountByUserId {
+    @DisplayName("Tests for getCountByUserId Method")
+    class getCountByUserId {
         @Test
         @DisplayName("Should return the number of the user's recipes")
         void shouldReturnTheNumberOfAuthorsRecipes() {
@@ -76,7 +125,7 @@ class RecipeServiceTest {
 
             when(recipeRepository.countByAuthorId(userId)).thenReturn(10L);
 
-            Long result = recipeService.getRecipesCountByUserId(userId);
+            Long result = recipeService.getCountByUserId(userId);
 
             assertEquals(10L, result);
             verify(recipeRepository, times(1)).countByAuthorId(eq(userId));
@@ -123,148 +172,46 @@ class RecipeServiceTest {
     @Nested
     @DisplayName("Tests for Create Recipe Method")
     class CreateRecipe {
-        @BeforeEach
-        void setup() {
-            MockitoAnnotations.openMocks(this);
+        @Test
+        @DisplayName("Should create recipe successfully when all data is valid")
+        void shouldCreateRecipeSuccessfully() {
+            when(recipeRepository.save(any(Recipe.class))).thenReturn(fakeRecipe);
 
-            fakeRecipe = new Recipe();
-            fakeRecipe.setId(1L);
-            fakeRecipe.setTitle("Fake Recipe");
-            fakeRecipe.setDescription("waved about helplessly as he looked. What's happened to me? he thought.");
-            fakeRecipe.setCookTimeMin(0);
-            fakeRecipe.setCookTimeMax(10);
-            fakeRecipe.setAuthor(new User());
-            fakeRecipe.setCoverUrl("http://example.com");
-            fakeRecipe.setCoverAlt("Alternative");
-            fakeRecipe.setEstimatedCost(new BigDecimal("10.5"));
+            Recipe savedRecipe = recipeService.create(fakeRecipe);
 
-            RecipeStatistics recipeStatistics = new RecipeStatistics();
-
-            recipeStatistics.incrementRating(new BigDecimal("4.5"));
-            recipeStatistics.setFavoritesCount(0);
-
-            fakeRecipe.setStatistics(recipeStatistics);
-
-            PreparationStep firstStep = PreparationStep.builder().id(1L).stepNumber(0).instruction("First Step").build();
-            PreparationStep secondStep = PreparationStep.builder().id(2L).stepNumber(1).instruction("Second Step").build();
-            PreparationStep thirdStep = PreparationStep.builder().id(3L).stepNumber(2).instruction("Third Step").build();
-
-            List<PreparationStep> steps = new ArrayList<>(List.of(firstStep, secondStep, thirdStep));
-
-            fakeRecipe.setSteps(steps);
-
-            Currency currency = new Currency(
-                (short) 1,
-                "USD",
-                "American Dollar",
-                "$"
-            );
-
-            fakeRecipe.setCurrency(currency);
-            fakeRecipe.setIngredients(new ArrayList<>());
-            fakeRecipe.setMedia(new ArrayList<>());
-            fakeRecipe.setComments(new ArrayList<>());
-            fakeRecipe.setTags(new HashSet<>());
-            fakeRecipe.setCategory(RecipeCategory.SNACK);
-            fakeRecipe.setCreatedAt(OffsetDateTime.now());
-            fakeRecipe.setUpdatedAt(OffsetDateTime.now());
+            assertNotNull(savedRecipe);
+            verify(recipeRepository, times(1)).save(fakeRecipe);
         }
 
         @Test
-        @DisplayName("Should throw a domain exception when the recipe has no steps")
-        void shouldThrowDomainExceptionWhenRecipeHasNoSteps() {
-            CreateRecipeDto mockRecipeDto = new CreateRecipeDto(
-                fakeRecipe.getTitle(),
-                fakeRecipe.getDescription(),
-                fakeRecipe.getCategory(),
-                fakeRecipe.getCookTimeMin(),
-                fakeRecipe.getCookTimeMax(),
-                fakeRecipe.getEstimatedCost(),
-                fakeRecipe.getCurrency().getId(),
-                fakeRecipe.getTags().stream().map(Tag::getId).collect(Collectors.toSet()),
-//                fakeRecipe.getSteps().stream().map(PreparationStepMapper::toStepRequestDto).toList(),
-                null,
-                fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientRequestDto).toList()
+        @DisplayName("Should throw exception when recipe has no steps")
+        void shouldThrowExceptionWhenNoSteps() {
+            fakeRecipe.setSteps(new ArrayList<>());
+
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> recipeService.create(fakeRecipe)
             );
 
-            assertThrows(DomainException.class, () -> recipeService.createRecipe(mockRecipeDto));
-
-            verify(currencyService, never()).findById(any());
-            verify(securityService, never()).getCurrentUser();
+            assertEquals("Recipe must have at least one step!", exception.getMessage());
             verify(recipeRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should create and return recipe successfully")
-        void shouldCreateAndReturnRecipeSuccessfully() {
-            CreateRecipeDto mockRecipeDto = new CreateRecipeDto(
-                fakeRecipe.getTitle(),
-                fakeRecipe.getDescription(),
-                fakeRecipe.getCategory(),
-                fakeRecipe.getCookTimeMin(),
-                fakeRecipe.getCookTimeMax(),
-                null,
-                null,
-                fakeRecipe.getTags().stream().map(Tag::getId).collect(Collectors.toSet()),
-                fakeRecipe.getSteps().stream().map(PreparationStepMapper::toStepRequestDto).toList(),
-                fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientRequestDto).toList()
+        @DisplayName("Should throw exception when recipe has no ingredients")
+        void shouldThrowExceptionWhenNoIngredients() {
+            fakeRecipe.setSteps(List.of(new PreparationStep(
+                1,
+                "Step 1")));
+            fakeRecipe.setIngredients(new ArrayList<>());
+
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> recipeService.create(fakeRecipe)
             );
 
-            Recipe mockRecipe = Recipe
-                .builder()
-                .id(1L)
-                .title(mockRecipeDto.title())
-                .category(mockRecipeDto.category())
-                .description(mockRecipeDto.description())
-                .cookTimeMin(mockRecipeDto.cookTimeMin())
-                .cookTimeMax(mockRecipeDto.cookTimeMax())
-                .author(fakeRecipe.getAuthor())
-                .steps(fakeRecipe.getSteps())
-                .estimatedCost(null)
-                .statistics(fakeRecipe.getStatistics())
-                .build();
-
-            when(recipeRepository.save(any())).thenReturn(mockRecipe);
-
-            FullRecipeDto results = recipeService.createRecipe(mockRecipeDto);
-
-            assertEquals(RecipeMapper.toFullRecipeDto(mockRecipe), results);
-
-            verify(securityService, times(1)).getCurrentUser();
-            verify(recipeRepository, times(1)).save(any(Recipe.class));
-        }
-
-        @Test
-        @DisplayName("Should update monetary details when currency is present")
-        void shouldUpdateMonetaryDetailsWhenCurrencyIsPresent() {
-            CreateRecipeDto mockRecipeDto = new CreateRecipeDto(
-                fakeRecipe.getTitle(),
-                fakeRecipe.getDescription(),
-                fakeRecipe.getCategory(),
-                fakeRecipe.getCookTimeMin(),
-                fakeRecipe.getCookTimeMax(),
-                fakeRecipe.getEstimatedCost(),
-                fakeRecipe.getCurrency().getId(),
-                fakeRecipe.getTags().stream().map(Tag::getId).collect(Collectors.toSet()),
-                fakeRecipe.getSteps().stream().map(PreparationStepMapper::toStepRequestDto).toList(),
-                fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientRequestDto).toList()
-            );
-
-            Currency currency = fakeRecipe.getCurrency();
-            ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
-
-            when(currencyService.findById(mockRecipeDto.currencyId())).thenReturn(currency);
-            when(recipeRepository.save(any())).thenReturn(fakeRecipe);
-
-            recipeService.createRecipe(mockRecipeDto);
-
-            verify(currencyService, times(1)).findById(mockRecipeDto.currencyId());
-
-            verify(recipeRepository).save(recipeCaptor.capture());
-            Recipe capturedRecipe = recipeCaptor.getValue();
-
-            assertEquals(mockRecipeDto.estimatedCost(), capturedRecipe.getEstimatedCost());
-            assertEquals(currency, capturedRecipe.getCurrency());
+            assertEquals("Recipe must have at least one ingredient!", exception.getMessage());
+            verify(recipeRepository, never()).save(any());
         }
     }
 
@@ -419,195 +366,60 @@ class RecipeServiceTest {
     @DisplayName("Tests for Update Recipe Method")
     class UpdateRecipeTests {
         @Test
-        @DisplayName("Should update recipe successfully when user is the author")
-        void shouldUpdateRecipeSuccessfully() {
-            Long recipeId = 1L;
-            Long userId = 10L;
-
-            User author = new User();
-            author.setId(userId);
-
-            Recipe recipe = spy(new Recipe());
-            recipe.setId(recipeId);
-            recipe.setAuthor(author);
-            recipe.setCookTimeMin(10);
-            recipe.setCookTimeMax(20);
-
-            RecipeStatistics recipeStatistics = new RecipeStatistics();
-
-            recipeStatistics.incrementRating(new BigDecimal("4.5"));
-            recipeStatistics.setFavoritesCount(0);
-
-            recipe.setStatistics(recipeStatistics);
-
-            UpdateRecipeDto updateDto = new UpdateRecipeDto(
-                "New Title",
-                "New Description",
-                RecipeCategory.SNACK,
-                null,
-                15,
-                new BigDecimal("50.0"),
-                (short) 1,
-                Set.of(1L, 2L),
-                null,
-                null
+        @DisplayName("Should sync steps and ingredients and save recipe")
+        void shouldSyncAndSaveRecipe() {
+            List<UpdateRecipeIngredientDto> ingredientDtos = List.of(
+                new UpdateRecipeIngredientDto(
+                    1L,
+                    new BigDecimal("2.0"),
+                    1L,
+                    IngredientUnitEnum.GRAM
+                )
+            );
+            List<UpdatePreparationStepDto> stepDtos = List.of(
+                new UpdatePreparationStepDto(
+                    1L,
+                    1,
+                    "Updated Instruction"
+                )
             );
 
-            User currentUser = new User();
-            currentUser.setId(userId);
+            when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            Currency mockCurrency = new Currency((short) 1, "USD", "Dollar", "$");
+            Recipe updatedRecipe = recipeService.updateAndSync(fakeRecipe, ingredientDtos, stepDtos);
 
-            when(tagService.findAllById(Set.of(1L, 2L))).thenReturn(new ArrayList<>(List.of(
-                new Tag(1L, "tag1"),
-                new Tag(2L, "tag2")
-            )));
-            when(securityService.getCurrentUser()).thenReturn(currentUser);
-            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(currencyService.findById(any())).thenReturn(mockCurrency);
-            when(recipeRepository.save(any())).thenReturn(recipe);
-
-            FullRecipeDto result = recipeService.updateRecipeById(recipeId, updateDto);
-
-            assertNotNull(result);
-            assertEquals("New Title", recipe.getTitle());
-            assertEquals("New Description", recipe.getDescription());
-
-            verify(recipe).updateTiming(anyInt(), anyInt());
-            verify(recipe).updateMonetaryDetails(eq(updateDto.estimatedCost()), eq(mockCurrency));
-            verify(recipeRepository).save(recipe);
+            assertNotNull(updatedRecipe);
+            verify(recipeRepository, times(1)).save(fakeRecipe);
         }
 
         @Test
-        @DisplayName("Should throw ForbiddenException when user is not the author")
-        void shouldThrowForbiddenExceptionWhenUserIsNotAuthor() {
-            Long recipeId = 1L;
-            User author = new User();
-            author.setId(10L);
-
-            Recipe recipe = new Recipe();
-            recipe.setAuthor(author);
-
-            User stranger = new User();
-            stranger.setId(99L);
-
-            UpdateRecipeDto updateDto = createEmptyUpdateDto();
-
-            when(securityService.getCurrentUser()).thenReturn(stranger);
-            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-
-            assertThrows(ForbiddenException.class, () ->
-                recipeService.updateRecipeById(recipeId, updateDto)
+        @DisplayName("Should throw exception when sync results in no steps")
+        void shouldThrowExceptionWhenSyncResultsInEmptySteps() {
+            List<UpdatePreparationStepDto> emptySteps = List.of();
+            List<UpdateRecipeIngredientDto> validIngredients = List.of(
+                new UpdateRecipeIngredientDto(
+                    1L,
+                    new BigDecimal("2.0"),
+                    1L,
+                    IngredientUnitEnum.GRAM
+                )
             );
 
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> recipeService.updateAndSync(fakeRecipe, validIngredients, emptySteps)
+            );
+
+            assertEquals("Recipe must have at least one preparation step", exception.getMessage());
             verify(recipeRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should NOT update fields when DTO values are null (Partial Update)")
-        void shouldNotUpdateFieldsWhenDtoValuesAreNull() {
-            Long recipeId = 1L;
-            String originalTitle = "Original Title";
+        @DisplayName("Should not sync if DTO lists are null")
+        void shouldNotSyncIfListsAreNull() {
+            recipeService.updateAndSync(fakeRecipe, null, null);
 
-            User author = new User();
-            author.setId(1L);
-
-            Recipe recipe = new Recipe();
-            recipe.setAuthor(author);
-            recipe.setTitle(originalTitle);
-
-            RecipeStatistics recipeStatistics = new RecipeStatistics();
-
-            recipeStatistics.incrementRating(new BigDecimal("4.5"));
-            recipeStatistics.setFavoritesCount(0);
-
-            recipe.setStatistics(recipeStatistics);
-
-            UpdateRecipeDto updateDto = new UpdateRecipeDto(
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            );
-
-            when(securityService.getCurrentUser()).thenReturn(author);
-            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(recipeRepository.save(any())).thenReturn(recipe);
-
-            recipeService.updateRecipeById(recipeId, updateDto);
-
-            assertEquals(originalTitle, recipe.getTitle(), "Title should remain unchanged");
-            verify(currencyService, never()).findById(any());
-        }
-
-        @Test
-        @DisplayName("Should sync tags, steps and ingredients when present in DTO")
-        void shouldSyncCollectionsWhenPresentInDto() {
-            Long recipeId = 1L;
-            User author = new User();
-            author.setId(1L);
-            Recipe recipe = new Recipe();
-            recipe.setAuthor(author);
-
-            RecipeStatistics recipeStatistics = new RecipeStatistics();
-
-            recipeStatistics.incrementRating(new BigDecimal("4.5"));
-            recipeStatistics.setFavoritesCount(0);
-
-            recipe.setStatistics(recipeStatistics);
-
-            List<UpdatePreparationStepDto> stepsMock = new ArrayList<>(
-                List.of(
-                    new UpdatePreparationStepDto(
-                        1L,
-                        0,
-                        "Step 1"
-                    )
-                )
-            );
-
-            List<UpdateRecipeIngredientDto> ingredientsMock = new ArrayList<>(List.of(
-                new UpdateRecipeIngredientDto(
-                    1L,
-                    new BigDecimal("10"),
-                    10L,
-                    IngredientUnitEnum.GRAM
-                )
-            ));
-
-            UpdateRecipeDto updateDto = new UpdateRecipeDto(
-                "Title",
-                "Desc",
-                null,
-                10,
-                10,
-                null,
-                null,
-                Set.of(1L),
-                stepsMock,
-                ingredientsMock
-            );
-
-            when(tagService.findAllById(Set.of(1L))).thenReturn(new ArrayList<>(List.of(
-                new Tag(1L, "tag1")
-            )));
-            when(securityService.getCurrentUser()).thenReturn(author);
-            when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(recipeRepository.save(any())).thenReturn(recipe);
-
-            recipeService.updateRecipeById(recipeId, updateDto);
-
-            verify(recipeRepository).save(any(Recipe.class));
-        }
-
-        private UpdateRecipeDto createEmptyUpdateDto() {
-            return new UpdateRecipeDto(null, null, null, null, null, null, null, null, null, null);
+            verify(recipeRepository, times(1)).save(fakeRecipe);
         }
     }
 
