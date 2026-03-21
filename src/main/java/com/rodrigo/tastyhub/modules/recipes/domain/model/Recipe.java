@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -199,6 +200,19 @@ public class Recipe {
 
         this.estimatedCost = newCost;
         this.currency = newCurrency;
+    }
+
+    public void updateCover(
+        @Nullable String newCoverUrl,
+        @Nullable String newCoverAlt
+    ) {
+        if (newCoverUrl != null) {
+            this.coverAlt = null;
+            this.coverUrl = null;
+        }
+
+        this.coverUrl = newCoverUrl;
+        this.coverAlt = newCoverAlt;
     }
 
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {
