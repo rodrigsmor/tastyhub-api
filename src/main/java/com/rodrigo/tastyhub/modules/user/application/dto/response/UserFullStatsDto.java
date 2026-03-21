@@ -1,5 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.application.dto.response;
 
+import com.rodrigo.tastyhub.modules.settings.domain.model.ProfileVisibility;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -19,6 +20,9 @@ public record UserFullStatsDto(
     @Schema(description = "Unique public username", example = "rodrigo_chef")
     String username,
 
+    @Schema(description = "The profile visibility (PRIVATE or PUBLIC)", example = "PUBLIC")
+    ProfileVisibility visibility,
+
     @Schema(description = "URL for the profile picture (avatar)", example = "https://cdn.tastyhub.com/profiles/1.jpg")
     String profilePictureUrl,
 
@@ -36,6 +40,12 @@ public record UserFullStatsDto(
 
     @Schema(description = "User's date of birth (ISO 8601)", example = "1995-05-15")
     LocalDate dateOfBirth,
+
+    @Schema(description = "Relationship status with the logged-in user: whether they are a follower or not", example = "PUBLIC")
+    Boolean isFollowing,
+
+    @Schema(description = "Relationship status with the logged-in user: whether they are a follower or not", example = "PUBLIC")
+    Boolean isFollower,
 
     @Schema(description = "Total number of recipes published by the user", example = "42")
     long recipeCount,
