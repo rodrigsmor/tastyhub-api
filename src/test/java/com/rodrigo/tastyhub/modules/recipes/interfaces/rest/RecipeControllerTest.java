@@ -80,6 +80,9 @@ class RecipeControllerTest {
     private GetRecipeByIdUseCase getRecipeById;
 
     @MockitoBean
+    private DeleteRecipeUseCase deleteRecipeById;
+
+    @MockitoBean
     private ListRecipesByCollectionUseCase listRecipesByCollection;
 
     private Recipe fakeRecipe;
@@ -390,13 +393,13 @@ class RecipeControllerTest {
         void shouldReturn204WhenDeleted() throws Exception {
             Long recipeId = 1L;
 
-            doNothing().when(recipeService).deleteRecipeById(recipeId);
+            doNothing().when(deleteRecipeById).execute(recipeId);
 
             mockMvc.perform(delete("/api/recipes/{id}", recipeId)
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
-            verify(recipeService, times(1)).deleteRecipeById(recipeId);
+            verify(deleteRecipeById, times(1)).execute(recipeId);
         }
 
         @Test
@@ -404,7 +407,7 @@ class RecipeControllerTest {
         void shouldReturn404WhenNotFound() throws Exception {
             Long recipeId = 999L;
             doThrow(new ResourceNotFoundException("Recipe not found"))
-                .when(recipeService).deleteRecipeById(recipeId);
+                .when(deleteRecipeById).execute(recipeId);
 
             mockMvc.perform(delete("/api/recipes/{id}", recipeId))
                 .andExpect(status().isNotFound());
@@ -415,7 +418,7 @@ class RecipeControllerTest {
         void shouldReturn403WhenForbidden() throws Exception {
             Long recipeId = 1L;
             doThrow(new ForbiddenException("You do not have permission to delete this recipe"))
-                .when(recipeService).deleteRecipeById(recipeId);
+                .when(deleteRecipeById).execute(recipeId);
 
             mockMvc.perform(delete("/api/recipes/{id}", recipeId))
                 .andExpect(status().isForbidden())
