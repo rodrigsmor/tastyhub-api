@@ -9,9 +9,9 @@ import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
