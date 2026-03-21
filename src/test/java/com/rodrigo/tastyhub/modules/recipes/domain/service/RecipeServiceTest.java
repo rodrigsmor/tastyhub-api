@@ -5,12 +5,10 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagin
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
-import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
-import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -318,7 +315,7 @@ class RecipeServiceTest {
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
             when(securityService.getCurrentUser()).thenReturn(currentUser);
 
-            recipeService.deleteRecipeById(recipeId);
+            recipeService.deleteById(recipeId, 10L);
 
             verify(recipeRepository, times(1)).delete(recipe);
         }
@@ -330,7 +327,7 @@ class RecipeServiceTest {
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.empty());
 
             assertThrows(ResourceNotFoundException.class, () ->
-                recipeService.deleteRecipeById(recipeId)
+                recipeService.deleteById(recipeId, 1L)
             );
 
             verify(securityService, never()).getCurrentUser();
@@ -355,7 +352,7 @@ class RecipeServiceTest {
             when(securityService.getCurrentUser()).thenReturn(stranger);
 
             assertThrows(ForbiddenException.class, () ->
-                recipeService.deleteRecipeById(recipeId)
+                recipeService.deleteById(recipeId, 1L)
             );
 
             verify(recipeRepository, never()).delete(any(Recipe.class));
