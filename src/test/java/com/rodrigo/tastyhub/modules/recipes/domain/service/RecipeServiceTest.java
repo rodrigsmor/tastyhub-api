@@ -6,8 +6,6 @@ import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
-import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
@@ -38,13 +36,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 class RecipeServiceTest {
     @Mock
-    private SecurityService securityService;
-
-    @Mock
     private RecipeRepository recipeRepository;
-
-    @Mock
-    private ImageStorageService imageStorageService;
 
     @InjectMocks
     private RecipeService recipeService;
@@ -313,7 +305,6 @@ class RecipeServiceTest {
             currentUser.setId(userId);
 
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(securityService.getCurrentUser()).thenReturn(currentUser);
 
             recipeService.deleteById(recipeId, 10L);
 
@@ -330,7 +321,6 @@ class RecipeServiceTest {
                 recipeService.deleteById(recipeId, 1L)
             );
 
-            verify(securityService, never()).getCurrentUser();
             verify(recipeRepository, never()).delete(any(Recipe.class));
         }
 
@@ -349,7 +339,6 @@ class RecipeServiceTest {
             stranger.setId(99L);
 
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(securityService.getCurrentUser()).thenReturn(stranger);
 
             assertThrows(ForbiddenException.class, () ->
                 recipeService.deleteById(recipeId, 1L)
@@ -444,21 +433,15 @@ class RecipeServiceTest {
             User currentUser = new User();
             currentUser.setId(userId);
 
-            MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
-
-            when(securityService.getCurrentUser()).thenReturn(currentUser);
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(imageStorageService.storeImage(file)).thenReturn(newCover);
             when(recipeRepository.save(any())).thenReturn(recipe);
 
-            Recipe result = recipeService.updateCoverById(recipeId, file, altText);
+            Recipe result = recipeService.updateCoverById(recipeId, currentUser, newCover, altText);
 
             assertEquals(newCover, result.getCoverUrl());
             assertEquals(altText, result.getCoverAlt());
 
-            verify(imageStorageService).storeImage(file);
             verify(recipeRepository).save(recipe);
-            verify(imageStorageService).deleteImage(oldCover);
         }
 
         @Test
@@ -476,16 +459,13 @@ class RecipeServiceTest {
 
             MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
 
-            when(securityService.getCurrentUser()).thenReturn(stranger);
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
 
             assertThrows(ForbiddenException.class, () ->
-                recipeService.updateCoverById(recipeId, file, "alt")
+                recipeService.updateCoverById(recipeId, stranger, "new-file.jpg", "alt")
             );
 
-            verify(imageStorageService, never()).storeImage(any());
             verify(recipeRepository, never()).save(any());
-            verify(imageStorageService, never()).deleteImage(any());
         }
 
         @Test
@@ -502,13 +482,12 @@ class RecipeServiceTest {
             String newCover = "brand-new.jpg";
             MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
 
-            when(securityService.getCurrentUser()).thenReturn(author);
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
-            when(imageStorageService.storeImage(file)).thenReturn(newCover);
 
-            recipeService.updateCoverById(recipeId, file, "alt");
+            User user = User.builder().id(1L).build();
 
-            verify(imageStorageService, never()).deleteImage(anyString());
+            recipeService.updateCoverById(recipeId, user, "new-file.js", "alt");
+
             verify(recipeRepository).save(recipe);
         }
 
@@ -518,14 +497,13 @@ class RecipeServiceTest {
             Long recipeId = 1L;
             MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
 
-            when(securityService.getCurrentUser()).thenReturn(new User());
             when(recipeRepository.findById(recipeId)).thenReturn(Optional.empty());
 
-            assertThrows(ResourceNotFoundException.class, () ->
-                recipeService.updateCoverById(recipeId, file, "alt")
-            );
+            User user = User.builder().id(1L).build();
 
-            verifyNoInteractions(imageStorageService);
+            assertThrows(ResourceNotFoundException.class, () ->
+                recipeService.updateCoverById(recipeId, user, "new-file.jpg", "alt")
+            );
         }
     }
 
