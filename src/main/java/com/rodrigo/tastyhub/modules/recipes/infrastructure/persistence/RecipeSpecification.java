@@ -2,19 +2,36 @@ package com.rodrigo.tastyhub.modules.recipes.infrastructure.persistence;
 
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQuery;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
+import com.rodrigo.tastyhub.modules.settings.domain.model.ProfileVisibility;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class RecipeSpecification {
-    public static Specification<Recipe> withFilters(ListRecipesQuery query, Long collectionId) {
+    public static Specification<Recipe> withFilters(ListRecipesQuery query, Long collectionId, Long currentUserId) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            Join<Recipe, Object> authorJoin = root.join("author", JoinType.LEFT);
+            Join<Object, Object> settingsJoin = authorJoin.join("settings", JoinType.LEFT);
+
+            Predicate isPublicRecipe = cb.isTrue(root.get("isPublic"));
+
+            Predicate authorNotPrivate = cb.notEqual(
+                settingsJoin.get("profileVisibility"),
+                ProfileVisibility.PRIVATE
+            );
+
+            Predicate visibleToAll = cb.and(isPublicRecipe, authorNotPrivate);
+
+            if (currentUserId != null) {
+                Predicate isOwner = cb.equal(authorJoin.get("id"), currentUserId);
+                predicates.add(cb.or(visibleToAll, isOwner));
+            } else {
+                predicates.add(visibleToAll);
+            }
 
             if (collectionId != null) {
                 Join<Recipe, Object> collectionsJoin = root.join("collections");
@@ -35,15 +52,6 @@ public class RecipeSpecification {
                 if (query.maxRating() != null) {
                     predicates.add(cb.lessThanOrEqualTo(stats.get("averageRating"), query.maxRating()));
                 }
-            }
-
-            if (query.minRating() != null) {
-                predicates.add(
-                    cb.greaterThanOrEqualTo(
-                        root.get("averageRating"),
-                        query.minRating()
-                    )
-                );
             }
 
             if (query.tags() != null && !query.tags().isEmpty()) {

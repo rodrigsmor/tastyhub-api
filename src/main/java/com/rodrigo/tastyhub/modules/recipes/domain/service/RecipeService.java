@@ -56,7 +56,8 @@ public class RecipeService {
         Page<Recipe> page = recipeRepository.findAll(
             RecipeSpecification.withFilters(
                 request,
-                collection == null ? null : collection.getId()
+                collection == null ? null : collection.getId(),
+                owner != null ? owner.getId() : null
             ),
             pageable
         );
