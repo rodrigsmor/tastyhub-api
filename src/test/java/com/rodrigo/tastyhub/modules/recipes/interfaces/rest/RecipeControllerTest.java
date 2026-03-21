@@ -9,10 +9,11 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagin
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.PreparationStepMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeIngredientMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
-import com.rodrigo.tastyhub.modules.recipes.application.usecases.ListRecipesUseCase;
+import com.rodrigo.tastyhub.modules.recipes.application.usecases.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
@@ -64,7 +65,22 @@ class RecipeControllerTest {
     private RecipeService recipeService;
 
     @MockitoBean
+    private UpdateRecipeUseCase updateRecipe;
+
+    @MockitoBean
+    private CreateRecipeUseCase createRecipe;
+
+    @MockitoBean
+    private SecurityService securityService;
+
+    @MockitoBean
     private ListRecipesUseCase listRecipes;
+
+    @MockitoBean
+    private GetRecipeByIdUseCase getRecipeById;
+
+    @MockitoBean
+    private ListRecipesByCollectionUseCase listRecipesByCollection;
 
     private Recipe fakeRecipe;
 
@@ -145,7 +161,7 @@ class RecipeControllerTest {
             Long recipeId = 1L;
             Recipe mockRecipe = fakeRecipe;
 
-            when(recipeService.findByIdOrThrow(recipeId)).thenReturn(mockRecipe);
+            when(getRecipeById.execute(recipeId)).thenReturn(RecipeMapper.toFullRecipeDto(mockRecipe));
 
             mockMvc.perform(get(BASE_URL + "/{id}", recipeId)
                     .accept(MediaType.APPLICATION_JSON))
@@ -158,7 +174,7 @@ class RecipeControllerTest {
         @DisplayName("2. Should return 404 when recipe ID does not exist")
         void shouldReturn404WhenNotFound() throws Exception {
             Long recipeId = 999L;
-            when(recipeService.findByIdOrThrow(recipeId))
+            when(getRecipeById.execute(recipeId))
                 .thenThrow(new ResourceNotFoundException("Recipe not found with the provided ID"));
 
             mockMvc.perform(get(BASE_URL + "/{id}", recipeId))
@@ -182,7 +198,7 @@ class RecipeControllerTest {
         @DisplayName("4. Should return 500 when an unexpected error occurs")
         void shouldReturn500OnUnexpectedError() throws Exception {
             Long recipeId = 1L;
-            when(recipeService.findByIdOrThrow(recipeId))
+            when(getRecipeById.execute(recipeId))
                 .thenThrow(new RuntimeException("Database connection failure"));
 
             mockMvc.perform(get(BASE_URL + "/{id}", recipeId))
@@ -303,7 +319,7 @@ class RecipeControllerTest {
                 OffsetDateTime.now()
             );
 
-            when(recipeService.createRecipe(any(CreateRecipeDto.class))).thenReturn(mockResponse);
+            when(createRecipe.execute(any(CreateRecipeDto.class))).thenReturn(mockResponse);
 
             mockMvc.perform(post("/api/recipes")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -355,7 +371,7 @@ class RecipeControllerTest {
                 fakeRecipe.getIngredients().stream().map(RecipeIngredientMapper::toIngredientRequestDto).toList()
             );
 
-            when(recipeService.createRecipe(any()))
+            when(createRecipe.execute(any()))
                 .thenThrow(new ForbiddenException("User must be verified to create recipes"));
 
             mockMvc.perform(post("/api/recipes")
@@ -452,7 +468,7 @@ class RecipeControllerTest {
                 OffsetDateTime.now()
             );
 
-            when(recipeService.updateRecipeById(eq(recipeId), any(UpdateRecipeDto.class)))
+            when(updateRecipe.execute(eq(recipeId), any(UpdateRecipeDto.class)))
                 .thenReturn(mockResponse);
 
             mockMvc.perform(put("/api/recipes/{id}", recipeId)
@@ -482,7 +498,7 @@ class RecipeControllerTest {
                 List.of())
             ;
 
-            when(recipeService.updateRecipeById(eq(recipeId), any()))
+            when(updateRecipe.execute(eq(recipeId), any()))
                 .thenThrow(new ForbiddenException("You are not the owner of this recipe"));
 
             mockMvc.perform(put("/api/recipes/{id}", recipeId)
@@ -509,7 +525,7 @@ class RecipeControllerTest {
                 List.of()
             );
 
-            when(recipeService.updateRecipeById(eq(recipeId), any()))
+            when(updateRecipe.execute(eq(recipeId), any()))
                 .thenThrow(new ResourceNotFoundException("Recipe not found"));
 
             mockMvc.perform(put("/api/recipes/{id}", recipeId)
