@@ -71,6 +71,9 @@ class RecipeControllerTest {
     private CreateRecipeUseCase createRecipe;
 
     @MockitoBean
+    private UpdateRecipeCoverUseCase updateRecipeCover;
+
+    @MockitoBean
     private SecurityService securityService;
 
     @MockitoBean
@@ -167,7 +170,7 @@ class RecipeControllerTest {
             when(getRecipeById.execute(recipeId)).thenReturn(RecipeMapper.toFullRecipeDto(mockRecipe));
 
             mockMvc.perform(get(BASE_URL + "/{id}", recipeId)
-                    .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(recipeId))
                 .andExpect(jsonPath("$.title").value("Fake Recipe"));
@@ -232,7 +235,7 @@ class RecipeControllerTest {
             when(listRecipes.execute(any(ListRecipesQuery.class))).thenReturn(mockPagination);
 
             mockMvc.perform(get("/api/recipes")
-                    .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.recipes").isArray())
                 .andExpect(jsonPath("$.metadata.page").value(1))
@@ -257,11 +260,11 @@ class RecipeControllerTest {
                 ));
 
             mockMvc.perform(get("/api/recipes")
-                    .param("tags", "vegan", "pasta")
-                    .param("minRating", "4")
-                    .param("page", "0")
-                    .param("size", "20")
-                    .accept(MediaType.APPLICATION_JSON))
+                .param("tags", "vegan", "pasta")
+                .param("minRating", "4")
+                .param("page", "0")
+                .param("size", "20")
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
             verify(listRecipes).execute(argThat(query ->
@@ -559,8 +562,8 @@ class RecipeControllerTest {
 
                 Recipe mockRecipe = fakeRecipe;
 
-                when(recipeService.updateCoverById(eq(recipeId), any(MultipartFile.class), anyString()))
-                    .thenReturn(mockRecipe);
+                when(updateRecipeCover.execute(eq(recipeId), any(MultipartFile.class), anyString()))
+                    .thenReturn(RecipeMapper.toFullRecipeDto(mockRecipe));
 
                 mockMvc.perform(multipart(HttpMethod.PATCH, "/api/recipes/{id}/cover", recipeId)
                         .file(file)
@@ -577,7 +580,7 @@ class RecipeControllerTest {
                 Long recipeId = 1L;
 
                 mockMvc.perform(multipart(HttpMethod.PATCH, "/api/recipes/{id}/cover", recipeId)
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                    .contentType(MediaType.MULTIPART_FORM_DATA))
                     .andExpect(status().isBadRequest());
             }
 
@@ -587,11 +590,11 @@ class RecipeControllerTest {
                 Long recipeId = 999L;
                 MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "data".getBytes());
 
-                when(recipeService.updateCoverById(eq(recipeId), any(), any()))
-                        .thenThrow(new ResourceNotFoundException("Recipe not found"));
+                when(updateRecipeCover.execute(eq(recipeId), any(), any()))
+                    .thenThrow(new ResourceNotFoundException("Recipe not found"));
 
                 mockMvc.perform(multipart(HttpMethod.PATCH, "/api/recipes/{id}/cover", recipeId)
-                        .file(file))
+                    .file(file))
                     .andExpect(status().isNotFound());
             }
         }
