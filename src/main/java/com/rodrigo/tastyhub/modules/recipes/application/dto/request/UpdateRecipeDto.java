@@ -21,6 +21,9 @@ public record UpdateRecipeDto(
     @Schema(example = "MEAL", description = "Recipe Category")
     RecipeCategory category,
 
+    @Schema(example = "true", description = "Visibility of recipe")
+    Boolean isPublic,
+
     @Schema(example = "20", description = "Minimum cooking time in minutes")
     @Positive(message = "Time must be positive")
     Integer cookTimeMin,

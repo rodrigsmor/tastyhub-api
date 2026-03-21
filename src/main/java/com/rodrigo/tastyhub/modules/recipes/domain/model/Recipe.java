@@ -151,6 +151,7 @@ public class Recipe {
         String title,
         String description,
         RecipeCategory category,
+        Boolean isPublic,
         Integer cookTimeMin,
         Integer cookTimeMax,
         BigDecimal estimatedCost,
@@ -161,6 +162,7 @@ public class Recipe {
         if (description != null) this.description = description;
         if (category != null) this.category = category;
         if (tags != null) this.updateAllTags(tags);
+        if (isPublic != null) this.isPublic = isPublic;
 
         this.updateMonetaryDetails(estimatedCost, currency);
         this.updateTiming(cookTimeMin, cookTimeMax);
