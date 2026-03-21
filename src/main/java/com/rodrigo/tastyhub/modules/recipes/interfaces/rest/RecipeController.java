@@ -44,21 +44,24 @@ public class RecipeController {
     private final UpdateRecipeUseCase updateRecipe;
     private final CreateRecipeUseCase createRecipe;
     private final GetRecipeByIdUseCase getRecipeById;
+    private final DeleteRecipeUseCase deleteRecipeById;
     private final ListRecipesByCollectionUseCase listRecipesByCollection;
 
     public RecipeController(
         RecipeService recipeService,
         ListRecipesUseCase listRecipes,
         CreateRecipeUseCase createRecipe,
-        GetRecipeByIdUseCase getRecipeById,
         UpdateRecipeUseCase updateRecipe,
+        GetRecipeByIdUseCase getRecipeById,
+        DeleteRecipeUseCase deleteRecipeById,
         ListRecipesByCollectionUseCase listRecipesByCollection
     ) {
-        this.recipeService = recipeService;
         this.listRecipes = listRecipes;
         this.createRecipe = createRecipe;
-        this.getRecipeById = getRecipeById;
         this.updateRecipe = updateRecipe;
+        this.getRecipeById = getRecipeById;
+        this.recipeService = recipeService;
+        this.deleteRecipeById = deleteRecipeById;
         this.listRecipesByCollection = listRecipesByCollection;
     }
 
@@ -240,7 +243,7 @@ public class RecipeController {
     public ResponseEntity<Void> deleteRecipeById(
         @PathVariable("id") Long id
     ) {
-        this.recipeService.deleteRecipeById(id);
+        this.deleteRecipeById.execute(id);
         return ResponseEntity.noContent().build();
     }
 
