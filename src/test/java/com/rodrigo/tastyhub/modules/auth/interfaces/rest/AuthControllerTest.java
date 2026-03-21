@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
+import com.rodrigo.tastyhub.modules.auth.application.usecases.GetMyProfileUseCase;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
@@ -41,6 +42,9 @@ class AuthControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private GetMyProfileUseCase useCase;
 
     @MockitoBean
     private AuthService authService;
