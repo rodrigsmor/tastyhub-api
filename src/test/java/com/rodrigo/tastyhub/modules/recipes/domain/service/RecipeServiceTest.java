@@ -45,8 +45,6 @@ class RecipeServiceTest {
 
     @BeforeEach
     void setup() {
-//        MockitoAnnotations.openMocks(this);
-
         fakeRecipe = new Recipe();
         fakeRecipe.setId(1L);
         fakeRecipe.setTitle("Fake Recipe");
