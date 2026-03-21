@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
+import com.rodrigo.tastyhub.modules.auth.application.usecases.GetMyProfileUseCase;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthService authService;
+    private final GetMyProfileUseCase getMyProfile;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GetMyProfileUseCase getMyProfile) {
         this.authService = authService;
+        this.getMyProfile = getMyProfile;
     }
 
     @Operation(
@@ -38,7 +41,7 @@ public class AuthController {
     })
     @GetMapping("/me")
     public ResponseEntity<UserFullStatsDto> getMyProfile() {
-        UserFullStatsDto response = this.authService.getMyProfile();
+        UserFullStatsDto response = this.getMyProfile.execute();
         return ResponseEntity.ok(response);
     }
 
