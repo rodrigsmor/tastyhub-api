@@ -115,13 +115,10 @@ public class RecipeService {
 
     @RequiresVerification
     @Transactional
-    public void deleteRecipeById(Long id) {
-        Recipe recipe = recipeRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found"));
+    public void deleteById(Long recipeId, Long ownerId) {
+        Recipe recipe = this.findByIdOrThrow(recipeId);
 
-        Long currentUserId = securityService.getCurrentUser().getId();
-
-        if (!recipe.getAuthor().getId().equals(currentUserId)) {
+        if (!recipe.getAuthor().getId().equals(ownerId)) {
             throw new ForbiddenException("You do not have permission to delete this recipe");
         }
 
