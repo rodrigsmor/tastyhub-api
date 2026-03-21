@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsD
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserProfileDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.modules.user.domain.projections.UserProfileProjection;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public final class UserMapper {
         );
     }
 
-    public static UserProfileDto toProfile(User user) {
+    public static UserProfileDto toProfile(UserProfileProjection user) {
         return new UserProfileDto(
             user.getId(),
             user.getFirstName(),
@@ -37,33 +38,30 @@ public final class UserMapper {
             storageService.generateImageUrl(user.getProfilePictureUrl()),
             user.getProfilePictureAlt(),
             user.getBio(),
-            storageService.generateImageUrl(user.getCoverPhotoUrl()),
-            user.getCoverPhotoAlt()
+            storageService.generateImageUrl(user.getCoverUrl()),
+            user.getCoverAlt()
         );
     }
 
-    public static UserFullStatsDto toFullStats(
-        User user,
-        long articleCount,
-        long recipeCount,
-        long followingCount,
-        long followersCount
-    ) {
+    public static UserFullStatsDto toFullStats(UserProfileProjection profile) {
         return new UserFullStatsDto(
-            user.getId(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getUsername(),
-            storageService.generateImageUrl(user.getProfilePictureUrl()),
-            user.getProfilePictureAlt(),
-            user.getBio(),
-            storageService.generateImageUrl(user.getCoverPhotoUrl()),
-            user.getCoverPhotoAlt(),
-            user.getDateOfBirth(),
-            recipeCount,
-            articleCount,
-            followersCount,
-            followingCount
+            profile.getId(),
+            profile.getFirstName(),
+            profile.getLastName(),
+            profile.getUsername(),
+            profile.getVisibility(),
+            storageService.generateImageUrl(profile.getProfilePictureUrl()),
+            profile.getProfilePictureAlt(),
+            profile.getBio(),
+            storageService.generateImageUrl(profile.getCoverUrl()),
+            profile.getCoverAlt(),
+            profile.getDateOfBirth(),
+            profile.getIsFollowing(),
+            profile.getIsFollower(),
+            profile.getRecipeCount() != null ? profile.getRecipeCount() : 0,
+            profile.getArticleCount() != null ? profile.getArticleCount() : 0,
+            profile.getFollowerCount() != null ? profile.getFollowerCount() : 0,
+            profile.getFollowingCount() != null ? profile.getFollowingCount() : 0
         );
     }
 }

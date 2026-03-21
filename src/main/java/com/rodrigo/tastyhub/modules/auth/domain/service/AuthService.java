@@ -5,7 +5,6 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
-import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
@@ -58,12 +57,6 @@ public class AuthService {
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
-
-    public UserFullStatsDto getMyProfile() {
-        return userService.getUserProfileById(
-            securityService.getCurrentUser().getId()
-        );
-    }
 
     @Transactional
     public ResponseEntity<SignupResponseDto> signup(SignupRequestDto signupDto) {
