@@ -50,6 +50,7 @@ class RecipeServiceTest {
         fakeRecipe = new Recipe();
         fakeRecipe.setId(1L);
         fakeRecipe.setTitle("Fake Recipe");
+        fakeRecipe.setPublic(true);
         fakeRecipe.setDescription("waved about helplessly as he looked. What's happened to me? he thought.");
         fakeRecipe.setCookTimeMin(0);
         fakeRecipe.setCookTimeMax(10);

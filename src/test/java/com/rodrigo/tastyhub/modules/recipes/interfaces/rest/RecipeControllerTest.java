@@ -96,6 +96,7 @@ class RecipeControllerTest {
 
         fakeRecipe = new Recipe();
         fakeRecipe.setId(1L);
+        fakeRecipe.setPublic(true);
         fakeRecipe.setTitle("Fake Recipe");
         fakeRecipe.setDescription("waved about helplessly as he looked. What's happened to me? he thought.");
         fakeRecipe.setCookTimeMin(0);
@@ -294,6 +295,7 @@ class RecipeControllerTest {
                 "Beef Wellington",
                 "Classic dish",
                 RecipeCategory.SNACK,
+                true,
                 60,
                 90,
                 new BigDecimal("150.00"),
@@ -350,6 +352,7 @@ class RecipeControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -368,6 +371,7 @@ class RecipeControllerTest {
                 "Title",
                 "Desc",
                 RecipeCategory.SOUP,
+                true,
                 10,
                 20,
                 null,
