@@ -60,6 +60,10 @@ public class Recipe {
     @Column(name = "cover_alt", length = 500)
     private String coverAlt;
 
+    @Builder.Default
+    @Column(name = "is_public", length = 500)
+    private boolean isPublic = true;
+
     @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @PrimaryKeyJoinColumn
     private RecipeStatistics statistics;

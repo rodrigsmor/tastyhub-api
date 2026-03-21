@@ -38,6 +38,10 @@ public class Article {
     private String coverAlt;
 
     @Builder.Default
+    @Column(name = "is_public", length = 500)
+    private boolean isPublic = true;
+
+    @Builder.Default
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
