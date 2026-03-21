@@ -5,10 +5,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.request.ListRecipesQ
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
-import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.application.usecases.*;
-import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
-import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,26 +36,29 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/recipes")
 public class RecipeController {
-    private final RecipeService recipeService;
     private final ListRecipesUseCase listRecipes;
     private final UpdateRecipeUseCase updateRecipe;
     private final CreateRecipeUseCase createRecipe;
     private final GetRecipeByIdUseCase getRecipeById;
+    private final DeleteRecipeUseCase deleteRecipeById;
+    private final UpdateRecipeCoverUseCase updateRecipeCover;
     private final ListRecipesByCollectionUseCase listRecipesByCollection;
 
     public RecipeController(
-        RecipeService recipeService,
         ListRecipesUseCase listRecipes,
         CreateRecipeUseCase createRecipe,
-        GetRecipeByIdUseCase getRecipeById,
         UpdateRecipeUseCase updateRecipe,
+        GetRecipeByIdUseCase getRecipeById,
+        DeleteRecipeUseCase deleteRecipeById,
+        UpdateRecipeCoverUseCase updateRecipeCover,
         ListRecipesByCollectionUseCase listRecipesByCollection
     ) {
-        this.recipeService = recipeService;
         this.listRecipes = listRecipes;
         this.createRecipe = createRecipe;
-        this.getRecipeById = getRecipeById;
         this.updateRecipe = updateRecipe;
+        this.getRecipeById = getRecipeById;
+        this.deleteRecipeById = deleteRecipeById;
+        this.updateRecipeCover = updateRecipeCover;
         this.listRecipesByCollection = listRecipesByCollection;
     }
 
@@ -240,7 +240,7 @@ public class RecipeController {
     public ResponseEntity<Void> deleteRecipeById(
         @PathVariable("id") Long id
     ) {
-        this.recipeService.deleteRecipeById(id);
+        this.deleteRecipeById.execute(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -301,14 +301,14 @@ public class RecipeController {
         @Parameter(description = "Profile picture alternative text")
         @RequestPart(value = "alternative_text", required = false) String alternativeText
     ) {
-        Recipe recipe = this.recipeService.updateCoverById(id, file, alternativeText);
+        FullRecipeDto recipe = this.updateRecipeCover.execute(id, file, alternativeText);
 
         URI uri = ServletUriComponentsBuilder
             .fromCurrentRequest()
             .path("/{id}/cover")
-            .buildAndExpand(recipe.getId())
+            .buildAndExpand(recipe.id())
             .toUri();
 
-        return ResponseEntity.created(uri).body(RecipeMapper.toFullRecipeDto(recipe));
+        return ResponseEntity.created(uri).body(recipe);
     }
 }

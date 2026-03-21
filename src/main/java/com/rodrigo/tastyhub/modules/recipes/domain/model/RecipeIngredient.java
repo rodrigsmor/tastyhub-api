@@ -31,4 +31,14 @@ public class RecipeIngredient {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private IngredientUnitEnum unit;
+
+    public RecipeIngredient(
+        BigDecimal quantity,
+        IngredientUnitEnum unit,
+        Ingredient ingredient
+    ) {
+        this.quantity = quantity;
+        this.unit = unit;
+        this.ingredient = ingredient;
+    }
 }

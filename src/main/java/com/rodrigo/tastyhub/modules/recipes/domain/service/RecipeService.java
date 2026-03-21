@@ -2,35 +2,27 @@ package com.rodrigo.tastyhub.modules.recipes.domain.service;
 
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.*;
-import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.RecipePagination;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.SummaryRecipeDto;
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
-import com.rodrigo.tastyhub.modules.recipes.domain.model.Currency;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.recipes.infrastructure.persistence.RecipeSpecification;
-import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
-import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
-import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
-import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import jakarta.annotation.Nullable;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,12 +30,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RecipeService {
-    private final TagService tagService;
-    private final SecurityService securityService;
     private final RecipeRepository recipeRepository;
-    private final CurrencyService currencyService;
     private final IngredientService ingredientService;
-    private final ImageStorageService imageStorageService;
 
     public Long getCountByUserId(Long userId) {
         return recipeRepository.countByAuthorId(userId);
@@ -60,32 +48,32 @@ public class RecipeService {
         @Nullable UserCollection collection
     ) {
         Pageable pageable = PageRequest.of(
-                request.page(),
-                request.size(),
-                buildSort(request.sortBy(), request.direction())
+            request.page(),
+            request.size(),
+            buildSort(request.sortBy(), request.direction())
         );
 
         Page<Recipe> page = recipeRepository.findAll(
-                RecipeSpecification.withFilters(
-                        request,
-                        collection == null ? null : collection.getId()
-                ),
-                pageable
+            RecipeSpecification.withFilters(
+                request,
+                collection == null ? null : collection.getId()
+            ),
+            pageable
         );
 
         List<SummaryRecipeDto> recipes = page.getContent()
-                .stream()
-                .map(RecipeMapper::toSummaryDto)
-                .toList();
+            .stream()
+            .map(RecipeMapper::toSummaryDto)
+            .toList();
 
         PaginationMetadata metadata = new PaginationMetadata(
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalPages(),
-                page.getTotalElements(),
-                request.direction(),
-                page.hasNext(),
-                page.hasPrevious()
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalPages(),
+            page.getTotalElements(),
+            request.direction(),
+            page.hasNext(),
+            page.hasPrevious()
         );
 
         return new RecipePagination(recipes, metadata);
@@ -93,26 +81,26 @@ public class RecipeService {
 
     public Recipe create(Recipe newRecipe) {
         if (newRecipe.getSteps().isEmpty()) {
-            throw new DomainException("Recipe must have at least one step!");
+            throw new IllegalArgumentException("Recipe must have at least one step!");
         }
 
         if (newRecipe.getIngredients().isEmpty()) {
-            throw new DomainException("Recipe must have at least one ingredient!");
+            throw new IllegalArgumentException("Recipe must have at least one ingredient!");
         }
 
         return recipeRepository.save(newRecipe);
     }
 
-    public Recipe update(
+    public Recipe updateAndSync(
         Recipe newRecipe,
         List<UpdateRecipeIngredientDto> newIngredients,
         List<UpdatePreparationStepDto> newSteps
     ) {
-        if (newIngredients != null) {
+        if (newSteps != null) {
             this.syncSteps(newRecipe, newSteps);
         }
 
-        if (newSteps != null) {
+        if (newIngredients != null) {
             this.syncIngredients(newRecipe, newIngredients);
         }
 
@@ -121,82 +109,29 @@ public class RecipeService {
 
     @RequiresVerification
     @Transactional
-    public FullRecipeDto updateRecipeById(Long recipeId, UpdateRecipeDto newData) {
-        Long userId = securityService.getCurrentUser().getId();
+    public void deleteById(Long recipeId, Long ownerId) {
+        Recipe recipe = this.findByIdOrThrow(recipeId);
 
-        Recipe recipe = findByIdOrThrow(recipeId);
-
-        if (!recipe.getAuthor().getId().equals(userId)) {
-            throw new ForbiddenException("You do not have permission to update this recipe");
-        }
-
-        Optional.ofNullable(newData.title()).ifPresent(recipe::setTitle);
-        Optional.ofNullable(newData.description()).ifPresent(recipe::setDescription);
-
-        recipe.updateTiming(recipe.getCookTimeMin(), recipe.getCookTimeMax());
-
-        Currency currency = null;
-
-        if (newData.currencyId() != null) {
-            currency = currencyService.findById(newData.currencyId());
-        }
-
-        recipe.updateMonetaryDetails(newData.estimatedCost(), currency);
-
-        Optional.ofNullable(newData.tagIds())
-            .ifPresent(ids -> this.syncTags(recipe, ids));
-
-        if (newData.steps() != null) {
-            this.syncSteps(recipe, newData.steps());
-        }
-
-        if (newData.ingredients() != null) {
-            this.syncIngredients(recipe, newData.ingredients());
-        }
-
-        return RecipeMapper.toFullRecipeDto(recipeRepository.save(recipe));
-    }
-
-    @RequiresVerification
-    @Transactional
-    public void deleteRecipeById(Long id) {
-        Recipe recipe = recipeRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Recipe not found"));
-
-        Long currentUserId = securityService.getCurrentUser().getId();
-
-        if (!recipe.getAuthor().getId().equals(currentUserId)) {
-            throw new ForbiddenException("You do not have permission to delete this recipe");
-        }
+        recipe.validateOwnership(ownerId);
 
         recipeRepository.delete(recipe);
     }
 
     @FileCleanup
     @Transactional
-    public Recipe updateCoverById(Long recipeId, MultipartFile file, String alternativeText) {
-        Long userId = securityService.getCurrentUser().getId();
+    public Recipe updateCoverById(
+        Long recipeId,
+        User owner,
+        String newCoverUrl,
+        String newAlternativeText
+    ) {
+        Recipe recipe = this.findByIdOrThrow(recipeId);
 
-        Recipe recipe = findByIdOrThrow(recipeId);
+        recipe.validateOwnership(owner.getId());
 
-        if (!recipe.getAuthor().getId().equals(userId)) {
-            throw new ForbiddenException("You do not have permission to update this recipe");
-        }
+        recipe.updateCover(newCoverUrl, newAlternativeText);
 
-        String oldFileName = recipe.getCoverUrl();
-
-        String filename = imageStorageService.storeImage(file);
-
-        recipe.setCoverUrl(filename);
-        recipe.setCoverAlt(alternativeText);
-
-        recipeRepository.save(recipe);
-
-        if (oldFileName != null) {
-            imageStorageService.deleteImage(oldFileName);
-        }
-
-        return recipe;
+        return recipeRepository.save(recipe);
     }
 
     private void syncIngredients(Recipe recipe, List<UpdateRecipeIngredientDto> ingredients) {
@@ -237,48 +172,23 @@ public class RecipeService {
     }
 
     @Transactional
-    private void syncSteps(Recipe recipe, List<UpdatePreparationStepDto> stepDtos) {
-        if (stepDtos.isEmpty()) {
-            throw new DomainException("Recipe must have at least one preparation step");
+    private void syncSteps(Recipe recipe, List<UpdatePreparationStepDto> newSteps) {
+        if (newSteps == null || newSteps.isEmpty()) {
+            throw new IllegalArgumentException("Recipe must have at least one preparation step");
         }
 
-        Set<Long> dtoIds = stepDtos.stream()
-            .map(UpdatePreparationStepDto::id)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
+        recipe.getSteps().clear();
 
-        recipe.getSteps().removeIf(existingStep -> !dtoIds.contains(existingStep.getId()));
+        recipeRepository.flush();
 
-        for (var dto : stepDtos) {
-            if (dto.id() != null) {
-                recipe.getSteps().stream()
-                    .filter(s -> s.getId().equals(dto.id()))
-                    .findFirst()
-                    .ifPresent(existingStep -> {
-                        existingStep.setStepNumber(dto.stepNumber());
-                        existingStep.setInstruction(dto.instruction());
-                    });
-            } else {
-                PreparationStep newStep = new PreparationStep();
-                newStep.setStepNumber(dto.stepNumber());
-                newStep.setInstruction(dto.instruction());
-                recipe.addStep(newStep);
-            }
-        }
-    }
+        int stepNumber = 1;
 
-    @Transactional
-    private void syncTags(Recipe recipe, Set<Long> tagIds) {
-        recipe.getTags().clear();
+        for (var dto : newSteps) {
+            PreparationStep step = new PreparationStep();
+            step.setStepNumber(stepNumber++);
+            step.setInstruction(dto.instruction());
 
-        if (tagIds != null && !tagIds.isEmpty()) {
-            List<Tag> tags = tagService.findAllById(tagIds);
-
-            if (tags.size() != tagIds.size()) {
-                throw new ResourceNotFoundException("One or more provided Tag IDs do not exist.");
-            }
-
-            recipe.getTags().addAll(tags);
+            recipe.addStep(step);
         }
     }
 
