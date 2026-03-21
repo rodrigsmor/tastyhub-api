@@ -11,6 +11,9 @@ public record SummaryRecipeDto(
     @Schema(description = "Title of the recipe", example = "Classic Italian Lasagna")
     String title,
 
+    @Schema(example = "true", description = "Visibility of recipe")
+    Boolean isPublic,
+
     @Schema(description = "Minimum estimated cooking time in minutes", example = "30")
     int minCookTime,
 

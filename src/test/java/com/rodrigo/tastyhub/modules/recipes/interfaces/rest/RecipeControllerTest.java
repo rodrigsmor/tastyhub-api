@@ -96,6 +96,7 @@ class RecipeControllerTest {
 
         fakeRecipe = new Recipe();
         fakeRecipe.setId(1L);
+        fakeRecipe.setPublic(true);
         fakeRecipe.setTitle("Fake Recipe");
         fakeRecipe.setDescription("waved about helplessly as he looked. What's happened to me? he thought.");
         fakeRecipe.setCookTimeMin(0);
@@ -294,6 +295,7 @@ class RecipeControllerTest {
                 "Beef Wellington",
                 "Classic dish",
                 RecipeCategory.SNACK,
+                true,
                 60,
                 90,
                 new BigDecimal("150.00"),
@@ -307,6 +309,7 @@ class RecipeControllerTest {
                 101L,
                 "Beef Wellington",
                 "Classic dish",
+                true,
                 RecipeCategory.SNACK,
                 60,
                 90,
@@ -350,6 +353,7 @@ class RecipeControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -368,6 +372,7 @@ class RecipeControllerTest {
                 "Title",
                 "Desc",
                 RecipeCategory.SOUP,
+                true,
                 10,
                 20,
                 null,
@@ -443,6 +448,7 @@ class RecipeControllerTest {
                 "Updated Title",
                 "Updated Description",
                 RecipeCategory.SNACK,
+                true,
                 15,
                 30,
                 new BigDecimal("50.00"),
@@ -456,6 +462,7 @@ class RecipeControllerTest {
                 recipeId,
                 "Updated Title",
                 "Updated Description",
+                true,
                 RecipeCategory.SNACK,
                 15,
                 30,
@@ -495,6 +502,7 @@ class RecipeControllerTest {
                 "Title",
                 "Desc",
                 RecipeCategory.SNACK,
+                true,
                 10,
                 20,
                 BigDecimal.TEN,
@@ -522,6 +530,7 @@ class RecipeControllerTest {
                 "Title",
                 "Desc",
                 RecipeCategory.CANDY,
+                true,
                 10,
                 20,
                 BigDecimal.TEN,

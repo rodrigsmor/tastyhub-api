@@ -5,7 +5,6 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -60,6 +59,10 @@ public class Recipe {
     @Column(name = "cover_alt", length = 500)
     private String coverAlt;
 
+    @Builder.Default
+    @Column(name = "is_public", length = 500)
+    private boolean isPublic = true;
+
     @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @PrimaryKeyJoinColumn
     private RecipeStatistics statistics;
@@ -100,6 +103,7 @@ public class Recipe {
         String title,
         String description,
         User author,
+        Boolean isPublic,
         RecipeCategory category,
         Integer cookTimeMin,
         Integer cookTimeMax,
@@ -115,7 +119,7 @@ public class Recipe {
         this.description = Objects.requireNonNull(description, "Description is required");
         this.author = Objects.requireNonNull(author, "Author is required");
         this.category = Objects.requireNonNull(category, "Category is required");
-
+        this.isPublic = isPublic != null ? isPublic : true;
         this.tags = (tags != null) ? new HashSet<>(tags) : new HashSet<>();
 
         steps.forEach(this::addStep);
@@ -147,6 +151,7 @@ public class Recipe {
         String title,
         String description,
         RecipeCategory category,
+        Boolean isPublic,
         Integer cookTimeMin,
         Integer cookTimeMax,
         BigDecimal estimatedCost,
@@ -157,6 +162,7 @@ public class Recipe {
         if (description != null) this.description = description;
         if (category != null) this.category = category;
         if (tags != null) this.updateAllTags(tags);
+        if (isPublic != null) this.isPublic = isPublic;
 
         this.updateMonetaryDetails(estimatedCost, currency);
         this.updateTiming(cookTimeMin, cookTimeMax);
@@ -203,16 +209,11 @@ public class Recipe {
     }
 
     public void updateCover(
-        @Nullable String newCoverUrl,
-        @Nullable String newCoverAlt
+        String newCoverUrl,
+        String newCoverAlt
     ) {
-        if (newCoverUrl != null) {
-            this.coverAlt = null;
-            this.coverUrl = null;
-        }
-
         this.coverUrl = newCoverUrl;
-        this.coverAlt = newCoverAlt;
+        this.coverAlt = (newCoverUrl == null) ? null : newCoverAlt;
     }
 
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {

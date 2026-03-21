@@ -24,6 +24,9 @@ public record CreateRecipeDto(
     @NotNull
     RecipeCategory category,
 
+    @Schema(example = "true", description = "Visibility of recipe")
+    Boolean isPublic,
+
     @Schema(example = "20", description = "Minimum cooking time in minutes")
     @NotNull(message = "Minimum cook time is required")
     @Positive(message = "Time must be positive")

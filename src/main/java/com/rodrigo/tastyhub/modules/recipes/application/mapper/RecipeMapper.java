@@ -25,6 +25,7 @@ public final class RecipeMapper {
         return new SummaryRecipeDto(
             recipe.getId(),
             recipe.getTitle(),
+            recipe.isPublic(),
             recipe.getCookTimeMin() != null ? recipe.getCookTimeMin() : 0,
             recipe.getCookTimeMax() != null ? recipe.getCookTimeMax() : 0,
             storageService.generateImageUrl(recipe.getCoverUrl()),
@@ -42,6 +43,7 @@ public final class RecipeMapper {
             recipe.getId(),
             recipe.getTitle(),
             recipe.getDescription(),
+            recipe.isPublic(),
             recipe.getCategory(),
             recipe.getCookTimeMin(),
             recipe.getCookTimeMax(),

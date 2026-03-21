@@ -17,8 +17,11 @@ public record FullRecipeDto(
     String title,
 
     @Schema(description = "Detailed description or story behind the recipe",
-            example = "A classic English dish consisting of a prime fillet of beef...")
+        example = "A classic English dish consisting of a prime fillet of beef...")
     String description,
+
+    @Schema(example = "true", description = "Visibility of recipe")
+    Boolean isPublic,
 
     @Schema(description = "The culinary category this recipe belongs to")
     RecipeCategory category,

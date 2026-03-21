@@ -59,6 +59,7 @@ public class CreateRecipeUseCase {
             newData.title(),
             newData.description(),
             author,
+            newData.isPublic(),
             newData.category(),
             newData.cookTimeMin(),
             newData.cookTimeMax(),

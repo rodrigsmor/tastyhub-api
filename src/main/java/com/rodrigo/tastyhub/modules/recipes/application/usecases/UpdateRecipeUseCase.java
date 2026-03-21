@@ -33,6 +33,7 @@ public class UpdateRecipeUseCase {
            newData.title(),
            newData.description(),
            newData.category(),
+           newData.isPublic(),
            newData.cookTimeMin(),
            newData.cookTimeMax(),
            newData.estimatedCost(),
