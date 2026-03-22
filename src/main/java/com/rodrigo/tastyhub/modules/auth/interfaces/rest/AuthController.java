@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.usecases.GetMyProfileUseCase;
+import com.rodrigo.tastyhub.modules.auth.application.usecases.SignupUseCase;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,17 +16,22 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 @Tag(name = "Authentication", description = "Endpoints for identity management, user registration, and access control.")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private final SignupUseCase signup;
     private final AuthService authService;
     private final GetMyProfileUseCase getMyProfile;
 
-    public AuthController(AuthService authService, GetMyProfileUseCase getMyProfile) {
+    public AuthController(SignupUseCase signup, AuthService authService, GetMyProfileUseCase getMyProfile) {
         this.authService = authService;
         this.getMyProfile = getMyProfile;
+        this.signup = signup;
     }
 
     @Operation(
@@ -57,7 +63,15 @@ public class AuthController {
     })
     @PostMapping("/signup")
     public ResponseEntity<SignupResponseDto> signup(@RequestBody SignupRequestDto signupDto) throws BadRequestException {
-        return authService.signup(signupDto);
+        SignupResponseDto response = this.signup.execute(signupDto);
+
+        URI uri = URI.create(ServletUriComponentsBuilder
+            .fromCurrentContextPath()
+            .path("/api/auth/signup")
+            .toUriString()
+        );
+
+        return ResponseEntity.created(uri).body(response);
     }
 
     @Operation(
