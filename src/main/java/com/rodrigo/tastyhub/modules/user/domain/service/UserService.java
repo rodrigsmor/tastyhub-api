@@ -9,13 +9,11 @@ import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
-import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -69,17 +67,6 @@ public class UserService {
         user.initializeSettings();
 
         return userRepository.save(user);
-    }
-
-    public User getVerifiedUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new BadCredentialsException("User record not found"));
-
-        if (!user.isVerified()) {
-            throw new ForbiddenException("Please verify your email before logging in");
-        }
-
-        return user;
     }
 
     @FileCleanup
