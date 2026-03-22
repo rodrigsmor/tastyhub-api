@@ -4,8 +4,8 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
+import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
-import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.exception.*;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
 import com.rodrigo.tastyhub.modules.auth.domain.model.RefreshToken;
@@ -17,6 +17,7 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,7 +34,7 @@ public class AuthService {
     private JwtGenerator jwtGenerator;
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     @Autowired
     private OnboardingService onboardingService;
@@ -50,23 +51,34 @@ public class AuthService {
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
 
+    public User getVerifiedUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new BadCredentialsException("User record not found"));
+
+        if (!user.isVerified()) {
+            throw new ForbiddenException("Please verify your email before logging in");
+        }
+
+        return user;
+    }
+
     @Transactional
-    public ResponseEntity<LoginResponseDto> login(LoginRequestDto loginDto) {
+    public LoginResponseDto login(LoginRequestDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.password())
         );
 
-        User user = userService.getVerifiedUserByEmail(loginDto.email());
+        User user = this.getVerifiedUserByEmail(loginDto.email());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String accessToken = jwtGenerator.generateToken(authentication);
         String refreshToken = createAndSaveRefreshToken(user);
 
-        return ResponseEntity.ok(new LoginResponseDto(
+        return new LoginResponseDto(
             accessToken,
             refreshToken,
             user.getOnboardingStatus().name()
-        ));
+        );
     }
 
     @Transactional
