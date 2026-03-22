@@ -1,14 +1,11 @@
 package com.rodrigo.tastyhub.modules.auth.domain.service;
 
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto;
-import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
-import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.*;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
 import com.rodrigo.tastyhub.modules.auth.domain.model.RefreshToken;
@@ -25,9 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -36,9 +31,6 @@ import java.util.UUID;
 public class AuthService {
     @Autowired
     private JwtGenerator jwtGenerator;
-
-    @Autowired
-    private SecurityService securityService;
 
     @Autowired
     private UserService userService;
@@ -57,26 +49,6 @@ public class AuthService {
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
-
-    @Transactional
-    public ResponseEntity<SignupResponseDto> signup(SignupRequestDto signupDto) {
-        User user = userService.createNewUser(signupDto);
-
-        String verificationToken = createVerificationToken(user);
-
-        URI uri = URI.create(ServletUriComponentsBuilder
-            .fromCurrentContextPath()
-            .path("/api/auth/signup")
-            .toUriString()
-        );
-
-        return ResponseEntity.created(uri).body(
-            new SignupResponseDto(
-                "Account successfully created! Please, verify your account. (temporary) verification code: " + verificationToken,
-                user.getEmail()
-            )
-        );
-    }
 
     @Transactional
     public ResponseEntity<LoginResponseDto> login(LoginRequestDto loginDto) {
@@ -158,7 +130,7 @@ public class AuthService {
         ));
     }
 
-    private String createVerificationToken(User user) {
+    public String createVerificationToken(User user) {
         String token = UUID.randomUUID().toString();
         VerificationToken verificationToken = VerificationToken.builder()
             .token(token)
