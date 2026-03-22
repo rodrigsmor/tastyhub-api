@@ -5,6 +5,7 @@ import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDt
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.usecases.GetMyProfileUseCase;
+import com.rodrigo.tastyhub.modules.auth.application.usecases.LoginUseCase;
 import com.rodrigo.tastyhub.modules.auth.application.usecases.SignupUseCase;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
@@ -25,10 +26,17 @@ import java.net.URI;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final SignupUseCase signup;
+    private final LoginUseCase login;
     private final AuthService authService;
     private final GetMyProfileUseCase getMyProfile;
 
-    public AuthController(SignupUseCase signup, AuthService authService, GetMyProfileUseCase getMyProfile) {
+    public AuthController(
+        LoginUseCase login,
+        SignupUseCase signup,
+        AuthService authService,
+        GetMyProfileUseCase getMyProfile
+    ) {
+        this.login = login;
         this.authService = authService;
         this.getMyProfile = getMyProfile;
         this.signup = signup;
@@ -86,7 +94,8 @@ public class AuthController {
     })
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginDto) {
-        return authService.login(loginDto);
+        LoginResponseDto response = login.execute(loginDto);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
