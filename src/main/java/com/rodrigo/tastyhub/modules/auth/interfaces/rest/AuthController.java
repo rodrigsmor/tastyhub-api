@@ -2,12 +2,9 @@ package com.rodrigo.tastyhub.modules.auth.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
-import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
+import com.rodrigo.tastyhub.modules.auth.application.dto.response.AuthResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
-import com.rodrigo.tastyhub.modules.auth.application.usecases.GetMyProfileUseCase;
-import com.rodrigo.tastyhub.modules.auth.application.usecases.LoginUseCase;
-import com.rodrigo.tastyhub.modules.auth.application.usecases.SignupUseCase;
-import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
+import com.rodrigo.tastyhub.modules.auth.application.usecases.*;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,21 +22,27 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    private final SignupUseCase signup;
     private final LoginUseCase login;
-    private final AuthService authService;
+    private final LogOutUseCase logout;
+    private final SignupUseCase signup;
+    private final RefreshTokenUseCase refreshToken;
     private final GetMyProfileUseCase getMyProfile;
+    private final VerifyEmailUseCase verifyEmail;
 
     public AuthController(
         LoginUseCase login,
         SignupUseCase signup,
-        AuthService authService,
+        LogOutUseCase logout,
+        RefreshTokenUseCase refreshToken,
+        VerifyEmailUseCase verifyEmail,
         GetMyProfileUseCase getMyProfile
     ) {
         this.login = login;
-        this.authService = authService;
-        this.getMyProfile = getMyProfile;
+        this.logout = logout;
         this.signup = signup;
+        this.refreshToken = refreshToken;
+        this.getMyProfile = getMyProfile;
+        this.verifyEmail = verifyEmail;
     }
 
     @Operation(
@@ -93,8 +96,8 @@ public class AuthController {
         @ApiResponse(responseCode = "403", description = "Please verify your email before logging in")
     })
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginDto) {
-        LoginResponseDto response = login.execute(loginDto);
+    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginRequestDto loginDto) {
+        AuthResponseDto response = login.execute(loginDto);
         return ResponseEntity.ok(response);
     }
 
@@ -109,10 +112,11 @@ public class AuthController {
         @ApiResponse(responseCode = "401", description = "Refresh token expired or revoked. Please log in again."),
     })
     @PostMapping("/refresh-token")
-    public ResponseEntity<LoginResponseDto> refreshToken(
+    public ResponseEntity<AuthResponseDto> refreshToken(
         @RequestHeader(name = "X-Refresh-Token", required = true) String refreshToken
     ) {
-        return authService.refreshToken(refreshToken);
+        AuthResponseDto response = this.refreshToken.execute(refreshToken);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
@@ -126,8 +130,9 @@ public class AuthController {
         @ApiResponse(responseCode = "401", description = "This verification link has expired."),
     })
     @GetMapping("/verify-email/{token}")
-    public ResponseEntity<LoginResponseDto> verifyEmail(@PathVariable String token) {
-        return authService.verifyEmail(token);
+    public ResponseEntity<AuthResponseDto> verifyEmail(@PathVariable String token) {
+        AuthResponseDto response = verifyEmail.execute(token);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
@@ -142,7 +147,8 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
         @RequestHeader(name = "X-Refresh-Token", required = true) String refreshToken
-    ) throws BadRequestException {
-        return authService.logOut(refreshToken);
+    ) {
+        logout.execute(refreshToken);
+        return ResponseEntity.noContent().build();
     }
 }
