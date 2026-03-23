@@ -2,7 +2,7 @@ package com.rodrigo.tastyhub.modules.auth.domain.service;
 
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
-import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
+import com.rodrigo.tastyhub.modules.auth.application.dto.response.AuthResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.modules.user.domain.model.Role;
@@ -15,9 +15,7 @@ import com.rodrigo.tastyhub.modules.auth.domain.model.VerificationToken;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -85,7 +83,7 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResponseDto login(LoginRequestDto loginDto) {
+    public AuthResponseDto login(LoginRequestDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.password())
         );
@@ -96,7 +94,7 @@ public class AuthService {
         String accessToken = jwtGenerator.generateToken(authentication);
         String refreshToken = createAndSaveRefreshToken(user);
 
-        return new LoginResponseDto(
+        return new AuthResponseDto(
             accessToken,
             refreshToken,
             user.getOnboardingStatus().name()
@@ -104,17 +102,15 @@ public class AuthService {
     }
 
     @Transactional
-    public ResponseEntity<Void> logOut(String refreshToken) throws BadRequestException {
+    public void logOut(String refreshToken) {
         RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
-            .orElseThrow(() -> new BadRequestException("Refresh token is missing or invalid"));
+            .orElseThrow(() -> new IllegalArgumentException("Refresh token is missing or invalid"));
 
         refreshTokenRepository.delete(tokenEntity);
-
-        return ResponseEntity.noContent().build();
     }
 
     @Transactional
-    public ResponseEntity<LoginResponseDto> refreshToken(String refreshTokenValue) {
+    public AuthResponseDto refreshToken(String refreshTokenValue) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
             .orElseThrow(() -> new InvalidTokenException("Invalid refresh token."));
 
@@ -130,7 +126,7 @@ public class AuthService {
     }
 
     @Transactional
-    public ResponseEntity<LoginResponseDto> verifyEmail(String token) {
+    public AuthResponseDto verifyEmail(String token) {
         VerificationToken vToken = verificationTokenRepository.findByToken(token)
             .orElseThrow(() -> new InvalidTokenException("Invalid or missing verification token."));
 
@@ -145,7 +141,7 @@ public class AuthService {
         return generateAuthResponse(user);
     }
 
-    private ResponseEntity<LoginResponseDto> generateAuthResponse(User user) {
+    private AuthResponseDto generateAuthResponse(User user) {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
             user.getEmail(),
             null,
@@ -157,11 +153,11 @@ public class AuthService {
 
         String refreshToken = createAndSaveRefreshToken(user);
 
-        return ResponseEntity.ok(new LoginResponseDto(
+        return new AuthResponseDto(
             accessToken,
             refreshToken,
             "Bearer "
-        ));
+        );
     }
 
     public String createVerificationToken(User user) {
