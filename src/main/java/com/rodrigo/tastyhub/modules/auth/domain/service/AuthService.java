@@ -1,9 +1,11 @@
 package com.rodrigo.tastyhub.modules.auth.domain.service;
 
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto;
+import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepository;
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
+import com.rodrigo.tastyhub.modules.user.domain.model.Role;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import com.rodrigo.tastyhub.shared.exception.*;
@@ -60,6 +62,26 @@ public class AuthService {
         }
 
         return user;
+    }
+
+    public User signup(
+        SignupRequestDto newData,
+        Role role
+    ) {
+        if (userRepository.existsByEmail(newData.email())) {
+            throw new DomainException("This email is already in use!");
+        }
+
+        User user = new User(
+            newData.firstName(),
+            newData.lastName(),
+            newData.email(),
+            role
+        );
+
+        user.setupPassword(newData.password(), passwordEncoder);
+
+        return userRepository.save(user);
     }
 
     @Transactional
