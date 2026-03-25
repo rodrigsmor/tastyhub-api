@@ -30,8 +30,8 @@ import java.util.*;
 public class RecipeService {
     private final RecipeRepository recipeRepository;
 
-    public Long getCountByUserId(Long userId) {
-        return recipeRepository.countByAuthorId(userId);
+    public Long countByAuthorId(Long authorId) {
+        return recipeRepository.countByAuthorId(authorId);
     }
 
     public Recipe findByIdOrThrow(Long recipeId) {
