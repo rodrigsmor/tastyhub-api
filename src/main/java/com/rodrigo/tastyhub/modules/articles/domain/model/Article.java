@@ -1,6 +1,7 @@
 package com.rodrigo.tastyhub.modules.articles.domain.model;
 
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
+import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,8 +29,9 @@ public class Article {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User author;
 
     @Column(name = "cover_url")
     private String coverUrl;
@@ -41,9 +43,17 @@ public class Article {
     @Column(name = "is_public", length = 500)
     private boolean isPublic = true;
 
+    @Column(name = "language", nullable = false, length = 5)
+    @Builder.Default
+    private String language = "en-US";
+
     @Builder.Default
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+    @OneToOne(mappedBy = "article", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @PrimaryKeyJoinColumn
+    private ArticleStatistics statistics;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
