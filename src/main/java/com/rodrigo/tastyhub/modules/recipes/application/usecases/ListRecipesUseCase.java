@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class ListRecipesUseCase {
@@ -19,8 +17,8 @@ public class ListRecipesUseCase {
 
     @Transactional
     public RecipePagination execute(ListRecipesQuery query) {
-        Optional<User> user = this.securityService.getCurrentUserOptional();
+        User user = this.securityService.getCurrentUserOptional().orElse(null);
 
-        return this.recipeService.getRecipesList(query, null, null);
+        return this.recipeService.findAll(query, user, null);
     }
 }
