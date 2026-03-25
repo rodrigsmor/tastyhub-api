@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.request.RecipeIngred
 import com.rodrigo.tastyhub.modules.recipes.application.dto.request.UpdateRecipeIngredientDto;
 import com.rodrigo.tastyhub.modules.recipes.application.dto.response.IngredientDto;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeIngredient;
+import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeIngredientCommand;
 
 public final class RecipeIngredientMapper {
     private RecipeIngredientMapper() {}
@@ -32,6 +33,15 @@ public final class RecipeIngredientMapper {
             ingredient.getQuantity(),
             ingredient.getIngredient().getId(),
             ingredient.getUnit()
+        );
+    }
+
+    public static RecipeIngredientCommand toCommand(UpdateRecipeIngredientDto ingredient) {
+        return new RecipeIngredientCommand(
+            ingredient.id(),
+            ingredient.ingredientId(),
+            ingredient.quantity(),
+            ingredient.unit()
         );
     }
 }
