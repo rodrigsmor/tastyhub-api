@@ -35,7 +35,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.rodrigo.tastyhub.modules.collections.infrastructure.persistence.*;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
