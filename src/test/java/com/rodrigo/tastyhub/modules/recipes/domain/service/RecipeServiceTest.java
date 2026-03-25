@@ -353,57 +353,11 @@ class RecipeServiceTest {
         @Test
         @DisplayName("Should sync steps and ingredients and save recipe")
         void shouldSyncAndSaveRecipe() {
-            List<UpdateRecipeIngredientDto> ingredientDtos = List.of(
-                new UpdateRecipeIngredientDto(
-                    1L,
-                    new BigDecimal("2.0"),
-                    1L,
-                    IngredientUnitEnum.GRAM
-                )
-            );
-            List<UpdatePreparationStepDto> stepDtos = List.of(
-                new UpdatePreparationStepDto(
-                    1L,
-                    1,
-                    "Updated Instruction"
-                )
-            );
-
             when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            Recipe updatedRecipe = recipeService.update(fakeRecipe, stepDtos);
+            Recipe updatedRecipe = recipeService.update(fakeRecipe);
 
             assertNotNull(updatedRecipe);
-            verify(recipeRepository, times(1)).save(fakeRecipe);
-        }
-
-        @Test
-        @DisplayName("Should throw exception when sync results in no steps")
-        void shouldThrowExceptionWhenSyncResultsInEmptySteps() {
-            List<UpdatePreparationStepDto> emptySteps = List.of();
-            List<UpdateRecipeIngredientDto> validIngredients = List.of(
-                new UpdateRecipeIngredientDto(
-                    1L,
-                    new BigDecimal("2.0"),
-                    1L,
-                    IngredientUnitEnum.GRAM
-                )
-            );
-
-            IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> recipeService.update(fakeRecipe, emptySteps)
-            );
-
-            assertEquals("Recipe must have at least one preparation step", exception.getMessage());
-            verify(recipeRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Should not sync if DTO lists are null")
-        void shouldNotSyncIfListsAreNull() {
-            recipeService.update(fakeRecipe, null);
-
             verify(recipeRepository, times(1)).save(fakeRecipe);
         }
     }
