@@ -1,105 +1,40 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
-import com.rodrigo.tastyhub.modules.articles.domain.service.ArticleService;
-import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
-import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
-import com.rodrigo.tastyhub.modules.social.domain.service.FollowService;
-import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.modules.user.application.mapper.UserMapper;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.modules.user.domain.projections.UserProfileProjection;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;
-import com.rodrigo.tastyhub.shared.exception.DomainException;
-import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final ArticleService articleService;
-
-    private final RecipeService recipeService;
-
-    private final FollowService followService;
-
     private final UserRepository userRepository;
-
-    private final PasswordEncoder passwordEncoder;
 
     private final ImageStorageService imageStorageService;
 
     private final SecurityService securityService;
 
-    private final RoleService roleService;
-
     public boolean existsById(Long userId) {
         return userRepository.existsById(userId);
+    }
+
+    public UserProfileProjection findProfileById(Long userId, @Nullable Long requesterId) {
+        return userRepository.findProfileById(userId, requesterId)
+            .orElseThrow(() -> new ResourceNotFoundException("The user provided cannot be found"));
     }
 
     public User findByIdOrThrow(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("The user provided cannot be found"));
-    }
-
-    @Transactional
-    public User createNewUser(SignupRequestDto dto) {
-        if (userRepository.existsByEmail(dto.email())) {
-            throw new DomainException("This email is already in use!");
-        }
-
-        User user = new User();
-        user.setFirstName(dto.firstName());
-        user.setLastName(dto.lastName());
-        user.setEmail(dto.email());
-        user.setUsername(dto.email());
-
-        user.setupPassword(dto.password(), passwordEncoder);
-
-        user.setRoles(Set.of(roleService.getDefaultRole()));
-        user.createDefaultCollections();
-
-        user.initializeSettings();
-
-        return userRepository.save(user);
-    }
-
-    public UserFullStatsDto getUserProfileById(Long userId) {
-        User user = findByIdOrThrow(userId);
-
-        long articleCount = articleService.getArticlesCountByUserId(userId);
-        long recipeCount = recipeService.getCountByUserId(userId);
-        long followersCount = followService.getFollowersCount(userId);
-        long followingCount = followService.getFollowingCount(userId);
-
-        return UserMapper.toFullStats(
-            user,
-            articleCount,
-            recipeCount,
-            followersCount,
-            followingCount
-        );
-    }
-
-    public User getVerifiedUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new BadCredentialsException("User record not found"));
-
-        if (!user.isVerified()) {
-            throw new ForbiddenException("Please verify your email before logging in");
-        }
-
-        return user;
     }
 
     @FileCleanup

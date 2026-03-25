@@ -13,6 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -156,7 +157,9 @@ public class Recipe {
         Integer cookTimeMax,
         BigDecimal estimatedCost,
         Currency currency,
-        List<Tag> tags
+        List<Tag> tags,
+        List<RecipeIngredient> recipeIngredients,
+        List<PreparationStep> steps
     ) {
         if (title != null) this.title = title;
         if (description != null) this.description = description;
@@ -166,6 +169,8 @@ public class Recipe {
 
         this.updateMonetaryDetails(estimatedCost, currency);
         this.updateTiming(cookTimeMin, cookTimeMax);
+        this.updateIngredients(recipeIngredients);
+        this.updateSteps(steps);
     }
 
     public void updateAllTags(List<Tag> tags) {
@@ -214,6 +219,58 @@ public class Recipe {
     ) {
         this.coverUrl = newCoverUrl;
         this.coverAlt = (newCoverUrl == null) ? null : newCoverAlt;
+    }
+
+    public void updateIngredients(List<RecipeIngredient> newIngredients) {
+        if (newIngredients == null) {
+            return;
+        }
+
+        if (newIngredients.isEmpty()) {
+            this.ingredients.clear();
+            return;
+        }
+
+        Set<Long> incomingIds = newIngredients.stream()
+            .map(RecipeIngredient::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        this.ingredients.removeIf(existing -> !incomingIds.contains(existing.getId()));
+
+        for (RecipeIngredient incoming : newIngredients) {
+            if (incoming.getId() != null) {
+                this.ingredients.stream()
+                    .filter(existing -> existing.getId().equals(incoming.getId()))
+                    .findFirst()
+                    .ifPresent(existing -> {
+                        existing.setQuantity(incoming.getQuantity());
+                        existing.setUnit(incoming.getUnit());
+                    });
+            } else {
+                incoming.setRecipe(this);
+                this.ingredients.add(incoming);
+            }
+        }
+    }
+
+    public void updateSteps(List<PreparationStep> newSteps) {
+        if (newSteps == null) {
+            return;
+        }
+
+        if (newSteps.isEmpty()) {
+            throw new DomainException("Recipe must have at least one preparation step");
+        }
+
+        this.steps.clear();
+
+        int stepNumber = 1;
+        for (PreparationStep step : newSteps) {
+            step.setStepNumber(stepNumber++);
+            step.setRecipe(this);
+            this.steps.add(step);
+        }
     }
 
     public void addIngredient(Ingredient ingredient, BigDecimal quantity, IngredientUnitEnum unit) {

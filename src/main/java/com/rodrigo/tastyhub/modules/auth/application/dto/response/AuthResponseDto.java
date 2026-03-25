@@ -2,7 +2,7 @@ package com.rodrigo.tastyhub.modules.auth.application.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record LoginResponseDto(
+public record AuthResponseDto(
     @Schema(
         description = "JWT access token used for authenticated requests",
         example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",

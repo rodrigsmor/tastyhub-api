@@ -141,6 +141,22 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    public User(
+        String firstName,
+        String lastName,
+        String email,
+        Role role
+    ) {
+        this.firstName =  Objects.requireNonNull(firstName, "First Name is required");
+        this.lastName =  Objects.requireNonNull(lastName, "Last Name is required");
+        this.email =  Objects.requireNonNull(email, "E-mail is required");
+        this.username = email;
+        this.roles = Set.of(role);
+
+        this.createDefaultCollections();
+        this.initializeSettings();
+    }
+
     public void setupPassword(String rawPassword, PasswordEncoder encoder) {
         if (rawPassword == null || rawPassword.isBlank()) {
             throw new DomainException("Password cannot be empty");

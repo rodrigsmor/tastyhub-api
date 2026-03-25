@@ -3,13 +3,13 @@ package com.rodrigo.tastyhub.modules.auth.interfaces.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.LoginRequestDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.request.SignupRequestDto;
-import com.rodrigo.tastyhub.modules.auth.application.dto.response.LoginResponseDto;
+import com.rodrigo.tastyhub.modules.auth.application.dto.response.AuthResponseDto;
 import com.rodrigo.tastyhub.modules.auth.application.dto.response.SignupResponseDto;
+import com.rodrigo.tastyhub.modules.auth.application.usecases.*;
 import com.rodrigo.tastyhub.modules.auth.domain.service.AuthService;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ExpiredTokenException;
 import com.rodrigo.tastyhub.shared.exception.InvalidTokenException;
-import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,12 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.net.URI;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -41,6 +38,24 @@ class AuthControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private LoginUseCase loginUseCase;
+
+    @MockitoBean
+    private SignupUseCase signupUseCase;
+
+    @MockitoBean
+    private GetMyProfileUseCase useCase;
+
+    @MockitoBean
+    private RefreshTokenUseCase refreshTokenUseCase;
+
+    @MockitoBean
+    private VerifyEmailUseCase verifyEmailUseCase;
+
+    @MockitoBean
+    private LogOutUseCase logout;
 
     @MockitoBean
     private AuthService authService;
@@ -62,7 +77,7 @@ class AuthControllerTest {
                 "john@example.com"
             );
 
-            when(authService.signup(any())).thenReturn(ResponseEntity.created(URI.create("/auth/signup")).body(response));
+            when(signupUseCase.execute(any())).thenReturn(response);
 
             mockMvc.perform(post("/api/auth/signup")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -82,7 +97,7 @@ class AuthControllerTest {
                 "Pass123!"
             );
 
-            when(authService.signup(any())).thenThrow(new DomainException("This email is already in use!"));
+            when(signupUseCase.execute(any())).thenThrow(new DomainException("This email is already in use!"));
 
             mockMvc.perform(post("/api/auth/signup")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -103,13 +118,13 @@ class AuthControllerTest {
                 "john@email.com",
                 "Pass123!"
             );
-            LoginResponseDto response = new LoginResponseDto(
+            AuthResponseDto response = new AuthResponseDto(
                 "access",
                 "refresh",
                 "Bearer "
             );
 
-            when(authService.login(any())).thenReturn(ResponseEntity.ok(response));
+            when(loginUseCase.execute(any())).thenReturn(response);
 
             mockMvc.perform(post("/api/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +141,7 @@ class AuthControllerTest {
                 "incorrect123!"
             );
 
-            when(authService.login(any(LoginRequestDto.class)))
+            when(loginUseCase.execute(any(LoginRequestDto.class)))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
 
             mockMvc.perform(post("/api/auth/login")
@@ -146,23 +161,22 @@ class AuthControllerTest {
         void logoutSuccess() throws Exception {
             String refreshToken = "valid-refresh-token";
 
-            when(authService.logOut(refreshToken)).thenReturn(ResponseEntity.noContent().build());
+            doNothing().when(logout).execute(refreshToken);
 
             mockMvc.perform(post("/api/auth/logout")
-                    .header("X-Refresh-Token", refreshToken) // Header obrigatório
-                    .header("Authorization", "Bearer valid-access-token")) // Simula o SecurityRequirement
+                    .header("X-Refresh-Token", refreshToken)
+                    .header("Authorization", "Bearer valid-access-token"))
                 .andExpect(status().isNoContent());
 
-            verify(authService, times(1)).logOut(refreshToken);
+            verify(logout, times(1)).execute(refreshToken);
         }
-
         @Test
         @DisplayName("Should return 400 when refresh token is invalid")
         void logoutWithInvalidToken() throws Exception {
             String invalidToken = "invalid-token";
 
-            when(authService.logOut(invalidToken))
-                    .thenThrow(new BadRequestException("Invalid refresh token."));
+            doThrow(new IllegalArgumentException("Invalid refresh token."))
+                .when(logout).execute(invalidToken);
 
             mockMvc.perform(post("/api/auth/logout")
                     .header("X-Refresh-Token", invalidToken))
@@ -184,9 +198,9 @@ class AuthControllerTest {
         @DisplayName("Should return 200 when refresh token is valid")
         void refreshTokenSuccess() throws Exception {
             String refreshToken = "valid-refresh-token";
-            LoginResponseDto response = new LoginResponseDto("new-access", "new-refresh", "Bearer ");
+            AuthResponseDto response = new AuthResponseDto("new-access", "new-refresh", "Bearer ");
 
-            when(authService.refreshToken(refreshToken)).thenReturn(ResponseEntity.ok(response));
+            when(refreshTokenUseCase.execute(refreshToken)).thenReturn(response);
 
             mockMvc.perform(post("/api/auth/refresh-token")
                     .header("X-Refresh-Token", refreshToken)
@@ -201,7 +215,7 @@ class AuthControllerTest {
         void refreshTokenFail() throws Exception {
             String refreshToken = "invalid-token";
 
-            when(authService.refreshToken(refreshToken))
+            when(refreshTokenUseCase.execute(refreshToken))
                 .thenThrow(new InvalidTokenException("Invalid refresh token."));
 
             mockMvc.perform(post("/api/auth/refresh-token")
@@ -218,9 +232,9 @@ class AuthControllerTest {
         @DisplayName("Should return 200 and authenticate user when verification is valid")
         void verifyEmailSuccess() throws Exception {
             String token = "valid-verify-token";
-            LoginResponseDto response = new LoginResponseDto("access", "refresh", "Bearer ");
+            AuthResponseDto response = new AuthResponseDto("access", "refresh", "Bearer ");
 
-            when(authService.verifyEmail(token)).thenReturn(ResponseEntity.ok(response));
+            when(verifyEmailUseCase.execute(token)).thenReturn(response);
 
             mockMvc.perform(
                     get("/api/auth/verify-email/{token}", token)
@@ -235,7 +249,7 @@ class AuthControllerTest {
         void verifyEmailExpired() throws Exception {
             String token = "expired-token";
 
-            when(authService.verifyEmail(token))
+            when(verifyEmailUseCase.execute(token))
                 .thenThrow(new ExpiredTokenException("This verification link has expired."));
 
             mockMvc.perform(get("/api/auth/verify-email/{token}", token))

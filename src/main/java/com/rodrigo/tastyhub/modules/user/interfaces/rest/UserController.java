@@ -2,6 +2,7 @@ package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
+import com.rodrigo.tastyhub.modules.user.application.usecases.GetUserProfileUseCase;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.exception.DomainException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,9 +26,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
+    private final GetUserProfileUseCase getUserProfile;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, GetUserProfileUseCase getUserProfile) {
         this.userService = userService;
+        this.getUserProfile = getUserProfile;
     }
 
     @Operation(
@@ -41,7 +44,7 @@ public class UserController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<UserFullStatsDto> getUserProfileById(@PathVariable("id") Long id) {
-        UserFullStatsDto user = this.userService.getUserProfileById(id);
+        UserFullStatsDto user = this.getUserProfile.execute(id);
         return ResponseEntity.ok(user);
     }
 

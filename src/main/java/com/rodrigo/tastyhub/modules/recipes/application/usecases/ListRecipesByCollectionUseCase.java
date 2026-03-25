@@ -27,10 +27,10 @@ public class ListRecipesByCollectionUseCase {
             throw new DomainException("Collection ID cannot be null. Please, provide a valid id.");
         }
 
-        Optional<User> user = this.securityService.getCurrentUserOptional();
+        User user = this.securityService.getCurrentUserOptional().orElse(null);
 
         UserCollection collection = this.collectionService.findByIdOrThrow(collectionId);
 
-        return this.recipeService.getRecipesList(query, null, collection);
+        return this.recipeService.findAll(query, user, collection);
     }
 }

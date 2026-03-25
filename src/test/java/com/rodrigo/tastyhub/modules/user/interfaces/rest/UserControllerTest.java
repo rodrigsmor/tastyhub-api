@@ -1,7 +1,9 @@
 package com.rodrigo.tastyhub.modules.user.interfaces.rest;
 
+import com.rodrigo.tastyhub.modules.settings.domain.model.ProfileVisibility;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserFullStatsDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
+import com.rodrigo.tastyhub.modules.user.application.usecases.GetUserProfileUseCase;
 import com.rodrigo.tastyhub.modules.user.domain.service.UserService;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
@@ -37,6 +39,9 @@ class UserControllerTest {
     private UserService userService;
 
     @MockitoBean
+    private GetUserProfileUseCase getUserProfile;
+
+    @MockitoBean
     private SecurityService securityService;
 
     @Nested
@@ -51,16 +56,22 @@ class UserControllerTest {
                 "Rodrigo",
                 "Silva",
                 "rodrigo_chef",
+                ProfileVisibility.PUBLIC,
                 "https://cdn.tastyhub.com/profiles/1.jpg",
                 "Rodrigo smiling",
                 "Passionate cook",
                 "https://cdn.tastyhub.com/covers/1.jpg",
                 "Kitchen table",
                 LocalDate.of(1995, 5, 15),
-                42L, 12L, 1540L, 320L
+                true,
+                true,
+                42L,
+                12L,
+                1540L,
+                320L
             );
 
-            when(userService.getUserProfileById(userId)).thenReturn(mockResponse);
+            when(getUserProfile.execute(userId)).thenReturn(mockResponse);
 
             mockMvc.perform(get("/api/users/{id}", userId)
                     .accept(MediaType.APPLICATION_JSON))
@@ -75,7 +86,7 @@ class UserControllerTest {
         @DisplayName("Should return 404 when service throws ResourceNotFoundException")
         void shouldReturn404WhenUserNotFound() throws Exception {
             Long userId = 999L;
-            when(userService.getUserProfileById(userId))
+            when(getUserProfile.execute(userId))
                 .thenThrow(new ResourceNotFoundException("User not found with the provided ID"));
 
             mockMvc.perform(get("/api/users/{id}", userId))
