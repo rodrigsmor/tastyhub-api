@@ -12,7 +12,6 @@ import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
-import com.rodrigo.tastyhub.shared.exception.DomainException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
 import jakarta.annotation.Nullable;
@@ -25,13 +24,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class RecipeService {
     private final RecipeRepository recipeRepository;
-    private final IngredientService ingredientService;
 
     public Long getCountByUserId(Long userId) {
         return recipeRepository.countByAuthorId(userId);
@@ -42,7 +39,7 @@ public class RecipeService {
             .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with the provided ID"));
     }
 
-    public RecipePagination getRecipesList(
+    public RecipePagination findAll(
         ListRecipesQuery request,
         @Nullable User owner,
         @Nullable UserCollection collection
@@ -92,19 +89,7 @@ public class RecipeService {
         return recipeRepository.save(newRecipe);
     }
 
-    public Recipe updateAndSync(
-        Recipe newRecipe,
-        List<UpdateRecipeIngredientDto> newIngredients,
-        List<UpdatePreparationStepDto> newSteps
-    ) {
-        if (newSteps != null) {
-            this.syncSteps(newRecipe, newSteps);
-        }
-
-        if (newIngredients != null) {
-            this.syncIngredients(newRecipe, newIngredients);
-        }
-
+    public Recipe update(Recipe newRecipe) {
         return recipeRepository.save(newRecipe);
     }
 
@@ -133,64 +118,6 @@ public class RecipeService {
         recipe.updateCover(newCoverUrl, newAlternativeText);
 
         return recipeRepository.save(recipe);
-    }
-
-    private void syncIngredients(Recipe recipe, List<UpdateRecipeIngredientDto> ingredients) {
-        if (ingredients == null || ingredients.isEmpty()) {
-            throw new DomainException("Recipe must have at least one ingredient!");
-        }
-
-        Set<Long> ingredientIds = ingredients.stream()
-            .map(UpdateRecipeIngredientDto::id)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-
-        recipe.getIngredients().removeIf(existing -> !ingredientIds.contains(existing.getId()));
-
-        for (var ingredient : ingredients) {
-            if (ingredient.id() != null) {
-                recipe.getIngredients().stream()
-                    .filter(ri -> ri.getId().equals(ingredient.id()))
-                    .findFirst()
-                    .ifPresent(ri -> {
-                        ri.setQuantity(ingredient.quantity());
-                        ri.setUnit(ingredient.unit());
-                    });
-            } else {
-                Ingredient masterIngredient = ingredientService.findById(ingredient.ingredientId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Ingredient " + ingredient.ingredientId() + " not found"));
-
-                RecipeIngredient newRelation = RecipeIngredient.builder()
-                    .ingredient(masterIngredient)
-                    .quantity(ingredient.quantity())
-                    .unit(ingredient.unit())
-                    .recipe(recipe)
-                    .build();
-
-                recipe.getIngredients().add(newRelation);
-            }
-        }
-    }
-
-    @Transactional
-    private void syncSteps(Recipe recipe, List<UpdatePreparationStepDto> newSteps) {
-        if (newSteps == null || newSteps.isEmpty()) {
-            throw new IllegalArgumentException("Recipe must have at least one preparation step");
-        }
-
-        recipe.getSteps().clear();
-
-        recipeRepository.flush();
-
-        int stepNumber = 1;
-
-        for (var dto : newSteps) {
-            PreparationStep step = new PreparationStep();
-            step.setStepNumber(stepNumber++);
-            step.setInstruction(dto.instruction());
-
-            recipe.addStep(step);
-        }
     }
 
     @Transactional
