@@ -233,7 +233,7 @@ class RecipeServiceTest {
             when(recipeRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(recipePage);
 
-            RecipePagination result = recipeService.getRecipesList(query, null, null);
+            RecipePagination result = recipeService.findAll(query, null, null);
 
             assertNotNull(result);
             assertEquals(1, result.recipes().size());
@@ -275,7 +275,7 @@ class RecipeServiceTest {
             when(recipeRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(emptyPage);
 
-            RecipePagination result = recipeService.getRecipesList(query, null, null);
+            RecipePagination result = recipeService.findAll(query, null, null);
 
             assertTrue(result.recipes().isEmpty());
             assertEquals(0, result.metadata().totalItems());
@@ -371,7 +371,7 @@ class RecipeServiceTest {
 
             when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            Recipe updatedRecipe = recipeService.updateAndSync(fakeRecipe, ingredientDtos, stepDtos);
+            Recipe updatedRecipe = recipeService.update(fakeRecipe, stepDtos);
 
             assertNotNull(updatedRecipe);
             verify(recipeRepository, times(1)).save(fakeRecipe);
@@ -392,7 +392,7 @@ class RecipeServiceTest {
 
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> recipeService.updateAndSync(fakeRecipe, validIngredients, emptySteps)
+                () -> recipeService.update(fakeRecipe, emptySteps)
             );
 
             assertEquals("Recipe must have at least one preparation step", exception.getMessage());
@@ -402,7 +402,7 @@ class RecipeServiceTest {
         @Test
         @DisplayName("Should not sync if DTO lists are null")
         void shouldNotSyncIfListsAreNull() {
-            recipeService.updateAndSync(fakeRecipe, null, null);
+            recipeService.update(fakeRecipe, null);
 
             verify(recipeRepository, times(1)).save(fakeRecipe);
         }
