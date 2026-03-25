@@ -21,7 +21,7 @@ public record SummaryRecipeDto(
     int maxCookTime,
 
     @Schema(description = "URL of the recipe's main cover image",
-            example = "https://cdn.tastyhub.com/images/recipes/lasagna.jpg")
+        example = "https://cdn.tastyhub.com/images/recipes/lasagna.jpg")
     String coverUrl,
 
     @Schema(description = "Alternative text for the cover image (accessibility)",
@@ -29,7 +29,7 @@ public record SummaryRecipeDto(
     String coverAlt,
 
     @Schema(description = "Simplified information about the recipe creator")
-    UserSummaryDto user,
+    UserSummaryDto author,
 
     @Schema(description = "Total number of ingredients required", example = "12")
     long ingredientsCount,

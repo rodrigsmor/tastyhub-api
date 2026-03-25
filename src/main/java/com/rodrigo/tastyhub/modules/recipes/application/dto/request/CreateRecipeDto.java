@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+import com.rodrigo.tastyhub.modules.recipes.domain.model.DifficultyLevel;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -24,8 +25,15 @@ public record CreateRecipeDto(
     @NotNull
     RecipeCategory category,
 
+    @Schema(example = "BEGINNER", description = "The Difficulty Level of the Recipe")
+    @NotNull
+    DifficultyLevel difficultyLevel,
+
     @Schema(example = "true", description = "Visibility of recipe")
     Boolean isPublic,
+
+    @Schema(description = "ISO 639-1 language code with region", example = "en-US")
+    String language,
 
     @Schema(example = "20", description = "Minimum cooking time in minutes")
     @NotNull(message = "Minimum cook time is required")

@@ -48,6 +48,8 @@ public class UpdateRecipeUseCase {
            newData.title(),
            newData.description(),
            newData.category(),
+           newData.language(),
+           newData.difficultyLevel(),
            newData.isPublic(),
            newData.cookTimeMin(),
            newData.cookTimeMax(),
