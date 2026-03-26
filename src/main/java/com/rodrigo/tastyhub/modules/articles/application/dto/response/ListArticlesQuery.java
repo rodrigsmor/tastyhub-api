@@ -5,6 +5,9 @@ import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
+
+import java.time.OffsetDateTime;
 
 @Schema(description = "Parameters for filtering and paginating articles")
 public record ListArticlesQuery(
@@ -24,7 +27,32 @@ public record ListArticlesQuery(
     ArticleSortBy sortBy,
 
     @Schema(description = "Order direction", defaultValue = "DESC")
-    SortDirection direction
+    SortDirection direction,
+
+    @Schema(description = "Language of the article", example = "en-US")
+    String language,
+
+    @PositiveOrZero
+    @Schema(description = "Minimum number of comments")
+    Integer minComments,
+
+    @PositiveOrZero
+    @Schema(description = "Maximum number of comments")
+    Integer maxComments,
+
+    @PositiveOrZero
+    @Schema(description = "Minimum number of likes")
+    Integer minLikesCount,
+
+    @PositiveOrZero
+    @Schema(description = "Maximum number of likes")
+    Integer maxLikesCount,
+
+    @Schema(description = "Minimum Date of CreatedAt")
+    OffsetDateTime minCreatedAt,
+
+    @Schema(description = "Maximum Date of CreatedAt")
+    OffsetDateTime maxCreatedAt
 ) {
     public ListArticlesQuery {
         page = (page == null) ? 0 : page;
