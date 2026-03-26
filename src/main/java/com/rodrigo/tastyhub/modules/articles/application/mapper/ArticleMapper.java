@@ -40,7 +40,9 @@ public class ArticleMapper {
             UserMapper.toSummary(article.getAuthor()),
             article.getStatistics().getCommentsCount(),
             article.getStatistics().getLikesCount(),
-            article.getStatistics().getFavoritesCount()
+            article.getStatistics().getFavoritesCount(),
+            article.getCreatedAt(),
+            article.getUpdatedAt()
         );
     }
 }

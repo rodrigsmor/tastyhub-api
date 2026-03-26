@@ -3,6 +3,8 @@ package com.rodrigo.tastyhub.modules.articles.application.dto.response;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.OffsetDateTime;
+
 @Schema(description = "Detailed representation of an article, including all instructions, ingredients, and metrics")
 public record FullArticleDto(
     @Schema(description = "Unique identifier of the article", example = "101")
@@ -33,5 +35,11 @@ public record FullArticleDto(
     double likesCount,
 
     @Schema(description = "Total number of users who favorited this article", example = "1250")
-    long favoritesCount
+    long favoritesCount,
+
+    @Schema(description = "Timestamp when the recipe was first published", example = "2026-03-01T20:00:00Z")
+    OffsetDateTime createdAt,
+
+    @Schema(description = "Timestamp of the last modification to the recipe", example = "2026-03-01T21:30:00Z")
+    OffsetDateTime updatedAt
 ) {}
