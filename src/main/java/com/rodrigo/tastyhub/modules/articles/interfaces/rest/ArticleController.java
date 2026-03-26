@@ -1,6 +1,8 @@
 package com.rodrigo.tastyhub.modules.articles.interfaces.rest;
 
+import com.rodrigo.tastyhub.modules.articles.application.dto.request.CreateArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.FullArticleDto;
+import com.rodrigo.tastyhub.modules.articles.application.usecases.CreateArticleUseCase;
 import com.rodrigo.tastyhub.modules.articles.application.usecases.GetArticleByIdUseCase;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,13 +12,15 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 @Tag(
     name = "Articles",
@@ -26,9 +30,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/articles")
 public class ArticleController {
+    private final CreateArticleUseCase createArticle;
     private final GetArticleByIdUseCase getArticleById;
 
-    public ArticleController(GetArticleByIdUseCase getArticleById) {
+    public ArticleController(
+        GetArticleByIdUseCase getArticleById,
+        CreateArticleUseCase createArticle
+    ) {
+        this.createArticle = createArticle;
         this.getArticleById = getArticleById;
     }
 
@@ -99,5 +108,43 @@ public class ArticleController {
     ) {
         FullArticleDto response = this.getArticleById.execute(id);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Create a new Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Registers a new article with its title, content, visibility and language." +
+            "The user must be verified to perform this action."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "201",
+            description = "Article created successfully",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input data or missing required fields",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "User not verified or unauthorized",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+        )
+    })
+    @PostMapping
+    public ResponseEntity<FullArticleDto> createArticle(
+        @RequestBody @Valid CreateArticleDto articleDto
+    ) {
+        FullArticleDto fullRecipeDto = this.createArticle.execute(articleDto);
+
+        URI uri = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(fullRecipeDto.id())
+            .toUri();
+
+        return ResponseEntity.created(uri).body(fullRecipeDto);
     }
 }
