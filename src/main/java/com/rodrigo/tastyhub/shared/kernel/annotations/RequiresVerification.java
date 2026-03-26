@@ -1,4 +1,4 @@
-package com.rodrigo.tastyhub.modules.user.domain.annotations;
+package com.rodrigo.tastyhub.shared.kernel.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

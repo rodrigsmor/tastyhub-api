@@ -5,7 +5,7 @@ import com.rodrigo.tastyhub.modules.articles.application.dto.response.FullArticl
 import com.rodrigo.tastyhub.modules.articles.application.mapper.ArticleMapper;
 import com.rodrigo.tastyhub.modules.articles.domain.model.Article;
 import com.rodrigo.tastyhub.modules.articles.domain.service.ArticleService;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import lombok.RequiredArgsConstructor;
