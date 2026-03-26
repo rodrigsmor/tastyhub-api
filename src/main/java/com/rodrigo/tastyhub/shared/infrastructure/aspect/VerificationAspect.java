@@ -1,9 +1,9 @@
-package com.rodrigo.tastyhub.modules.user.infrastructure.aspect;
+package com.rodrigo.tastyhub.shared.infrastructure.aspect;
 
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -21,6 +21,10 @@ public class VerificationAspect {
 
         if (!user.isVerified()) {
             throw new ForbiddenException("Account not verified. Please check your email.");
+        }
+
+        if (!user.isOnboardingFinished()) {
+            throw new ForbiddenException("To perform this action you must complete your onboarding!");
         }
     }
 }
