@@ -1,7 +1,6 @@
 package com.rodrigo.tastyhub.modules.articles.domain.model;
 
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
-import com.rodrigo.tastyhub.modules.recipes.domain.model.RecipeStatistics;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,6 +16,7 @@ import java.util.Objects;
 @Table(name = "articles")
 @Getter
 @Setter
+@NoArgsConstructor
 public class Article {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,15 +38,12 @@ public class Article {
     @Column(name = "cover_alt", length = 500)
     private String coverAlt;
 
-    @Builder.Default
     @Column(name = "is_public", length = 500)
     private boolean isPublic = true;
 
     @Column(name = "language", nullable = false, length = 5)
-    @Builder.Default
     private String language = "en-US";
 
-    @Builder.Default
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
