@@ -153,8 +153,20 @@ public class User {
         this.username = email;
         this.roles = Set.of(role);
 
+        init();
+
         this.createDefaultCollections();
         this.initializeSettings();
+    }
+
+    private void init() {
+        this.recipes = new ArrayList<>();
+        this.followers = new HashSet<>();
+        this.following = new HashSet<>();
+        this.followedTags = new HashSet<>();
+
+        this.onboardingStatus = OnboardingStatus.PENDING_VERIFICATION;
+        this.status = UserStatus.PENDING;
     }
 
     public void setupPassword(String rawPassword, PasswordEncoder encoder) {
@@ -232,6 +244,8 @@ public class User {
     }
 
     public void createDefaultCollections() {
+        this.collections = new ArrayList<>();
+
         UserCollection favorites = UserCollection
             .builder()
             .name("Favorite Recipes 🍽")

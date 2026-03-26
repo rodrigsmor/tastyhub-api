@@ -104,8 +104,8 @@ class RecipeServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for getCountByUserId Method")
-    class getCountByUserId {
+    @DisplayName("Tests for countByAuthorId Method")
+    class countByAuthorId {
         @Test
         @DisplayName("Should return the number of the user's recipes")
         void shouldReturnTheNumberOfAuthorsRecipes() {
@@ -113,7 +113,7 @@ class RecipeServiceTest {
 
             when(recipeRepository.countByAuthorId(userId)).thenReturn(10L);
 
-            Long result = recipeService.getCountByUserId(userId);
+            Long result = recipeService.countByAuthorId(userId);
 
             assertEquals(10L, result);
             verify(recipeRepository, times(1)).countByAuthorId(eq(userId));

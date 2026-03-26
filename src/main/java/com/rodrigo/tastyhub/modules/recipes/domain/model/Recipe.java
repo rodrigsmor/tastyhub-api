@@ -42,6 +42,19 @@ public class Recipe {
     @Column(name = "estimated_cost")
     private BigDecimal estimatedCost;
 
+    @Column(name = "language", nullable = false, length = 5)
+    @Builder.Default
+    private String language = "en-US";
+
+    @Enumerated(EnumType.STRING)
+    @Column(
+        name = "difficulty_level",
+        nullable = false,
+        columnDefinition = "difficulty_level_enum"
+    )
+    @Builder.Default
+    private DifficultyLevel difficultyLevel = DifficultyLevel.BEGINNER;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     private RecipeCategory category;
@@ -105,6 +118,8 @@ public class Recipe {
         String description,
         User author,
         Boolean isPublic,
+        String language,
+        DifficultyLevel difficultyLevel,
         RecipeCategory category,
         Integer cookTimeMin,
         Integer cookTimeMax,
@@ -120,6 +135,8 @@ public class Recipe {
         this.description = Objects.requireNonNull(description, "Description is required");
         this.author = Objects.requireNonNull(author, "Author is required");
         this.category = Objects.requireNonNull(category, "Category is required");
+        this.language = Objects.requireNonNull(language, "Language is required");
+        this.difficultyLevel = Objects.requireNonNull(difficultyLevel, "Difficulty Level is required");
         this.isPublic = isPublic != null ? isPublic : true;
         this.tags = (tags != null) ? new HashSet<>(tags) : new HashSet<>();
 
@@ -152,6 +169,8 @@ public class Recipe {
         String title,
         String description,
         RecipeCategory category,
+        String language,
+        DifficultyLevel difficultyLevel,
         Boolean isPublic,
         Integer cookTimeMin,
         Integer cookTimeMax,
@@ -163,9 +182,11 @@ public class Recipe {
     ) {
         if (title != null) this.title = title;
         if (description != null) this.description = description;
+        if (language != null) this.language = language;
         if (category != null) this.category = category;
         if (tags != null) this.updateAllTags(tags);
         if (isPublic != null) this.isPublic = isPublic;
+        if (difficultyLevel != null) this.difficultyLevel = difficultyLevel;
 
         this.updateMonetaryDetails(estimatedCost, currency);
         this.updateTiming(cookTimeMin, cookTimeMax);

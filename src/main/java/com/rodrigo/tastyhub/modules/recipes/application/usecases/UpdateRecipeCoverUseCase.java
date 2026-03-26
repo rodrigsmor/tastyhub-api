@@ -4,7 +4,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.dto.response.FullRecipeD
 import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.config.storage.ImageStorageService;

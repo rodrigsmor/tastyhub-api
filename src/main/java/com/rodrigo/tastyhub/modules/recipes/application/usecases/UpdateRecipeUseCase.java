@@ -11,7 +11,7 @@ import com.rodrigo.tastyhub.modules.recipes.domain.service.CurrencyService;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.IngredientService;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,6 +48,8 @@ public class UpdateRecipeUseCase {
            newData.title(),
            newData.description(),
            newData.category(),
+           newData.language(),
+           newData.difficultyLevel(),
            newData.isPublic(),
            newData.cookTimeMin(),
            newData.cookTimeMax(),

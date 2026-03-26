@@ -1,7 +1,7 @@
 package com.rodrigo.tastyhub.modules.recipes.application.usecases;
 
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import lombok.RequiredArgsConstructor;

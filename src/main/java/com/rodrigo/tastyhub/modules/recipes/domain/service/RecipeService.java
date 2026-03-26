@@ -8,7 +8,7 @@ import com.rodrigo.tastyhub.modules.recipes.application.mapper.RecipeMapper;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.*;
 import com.rodrigo.tastyhub.modules.recipes.domain.repository.RecipeRepository;
 import com.rodrigo.tastyhub.modules.recipes.infrastructure.persistence.RecipeSpecification;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
@@ -30,8 +30,8 @@ import java.util.*;
 public class RecipeService {
     private final RecipeRepository recipeRepository;
 
-    public Long getCountByUserId(Long userId) {
-        return recipeRepository.countByAuthorId(userId);
+    public Long countByAuthorId(Long authorId) {
+        return recipeRepository.countByAuthorId(authorId);
     }
 
     public Recipe findByIdOrThrow(Long recipeId) {

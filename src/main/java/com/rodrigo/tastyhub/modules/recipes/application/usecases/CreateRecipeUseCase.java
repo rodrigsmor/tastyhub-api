@@ -8,7 +8,7 @@ import com.rodrigo.tastyhub.modules.recipes.domain.service.CurrencyService;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.IngredientService;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +60,8 @@ public class CreateRecipeUseCase {
             newData.description(),
             author,
             newData.isPublic(),
+            newData.language(),
+            newData.difficultyLevel(),
             newData.category(),
             newData.cookTimeMin(),
             newData.cookTimeMax(),

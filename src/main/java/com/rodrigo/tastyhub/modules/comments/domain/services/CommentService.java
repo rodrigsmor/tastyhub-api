@@ -13,7 +13,7 @@ import com.rodrigo.tastyhub.modules.comments.domain.repository.CommentRepository
 import com.rodrigo.tastyhub.modules.comments.infrastructure.persistence.CommentSpecification;
 import com.rodrigo.tastyhub.modules.recipes.domain.model.Recipe;
 import com.rodrigo.tastyhub.modules.recipes.domain.service.RecipeService;
-import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresVerification;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;

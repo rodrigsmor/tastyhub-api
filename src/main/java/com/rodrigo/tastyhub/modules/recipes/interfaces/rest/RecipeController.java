@@ -171,6 +171,38 @@ public class RecipeController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(
+        summary = "List and Filter Recipes By Collections",
+        description = """
+            Provides a paginated list of recipes from a specific collection with support for complex filtering.
+            You can filter by tags, categories, rating, cost, and ingredient count.
+            The results can be sorted by relevance, popularity, or date.
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Recipes successfully retrieved",
+            content = @Content(schema = @Schema(implementation = RecipePagination.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid filter parameters provided",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponseDto.class),
+                examples = @ExampleObject(
+                    value = """
+                        {
+                          "message": "Invalid filter parameters provided",
+                          "status": 400,
+                          "timestamp": "2026-03-12T12:30:00"
+                        }
+                    """
+                )
+            )
+        )
+    })
     @GetMapping("/collections/{collectionId}")
     public ResponseEntity<RecipePagination> listRecipesByCollection(
         @Parameter(description = "ID of the collection to retrieve recipes", required = true, example = "1")
