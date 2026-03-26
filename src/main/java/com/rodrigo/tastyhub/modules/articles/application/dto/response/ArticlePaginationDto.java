@@ -4,7 +4,7 @@ import com.rodrigo.tastyhub.shared.dto.response.PaginationMetadata;
 
 import java.util.List;
 
-public record ArticlePagination(
+public record ArticlePaginationDto(
     List<SummaryArticleDto> articles,
     PaginationMetadata metadata
 ) {}
