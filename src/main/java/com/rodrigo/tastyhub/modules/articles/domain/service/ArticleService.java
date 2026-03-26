@@ -1,6 +1,6 @@
 package com.rodrigo.tastyhub.modules.articles.domain.service;
 
-import com.rodrigo.tastyhub.modules.articles.application.dto.response.ArticlePagination;
+import com.rodrigo.tastyhub.modules.articles.application.dto.response.ArticlePaginationDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ListArticlesQuery;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.SummaryArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.mapper.ArticleMapper;
@@ -38,7 +38,7 @@ public class ArticleService {
             .orElseThrow(() -> new ResourceNotFoundException("Article not found with the provided ID"));
     }
 
-    public ArticlePagination findAll(
+    public ArticlePaginationDto findAll(
         ListArticlesQuery request,
         @Nullable User owner,
         @Nullable UserCollection collection
@@ -73,7 +73,25 @@ public class ArticleService {
             page.hasPrevious()
         );
 
-        return new ArticlePagination(articles, metadata);
+        return new ArticlePaginationDto(articles, metadata);
+    }
+
+    public Article create(
+        String title,
+        String content,
+        Boolean isPublic,
+        String language,
+        User author
+    ) {
+        Article article = new Article(
+            title,
+            content,
+            author,
+            isPublic,
+            language
+        );
+
+        return articleRepository.save(article);
     }
 
     @Transactional
