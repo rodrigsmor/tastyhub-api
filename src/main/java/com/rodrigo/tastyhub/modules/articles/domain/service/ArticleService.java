@@ -92,6 +92,14 @@ public class ArticleService {
         return articleRepository.save(article);
     }
 
+    public void delete(Long articleId, Long ownerId) {
+        Article article = this.findByIdOrThrow(articleId);
+
+        article.validateOwnership(ownerId);
+
+        articleRepository.delete(article);
+    }
+
     @Transactional
     private Sort buildSort(ArticleSortBy sortBy, SortDirection direction) {
         String field = switch (sortBy) {
