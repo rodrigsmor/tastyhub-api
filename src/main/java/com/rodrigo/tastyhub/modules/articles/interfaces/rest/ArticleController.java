@@ -6,6 +6,7 @@ import com.rodrigo.tastyhub.modules.articles.application.dto.response.ArticlePag
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.FullArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ListArticlesQuery;
 import com.rodrigo.tastyhub.modules.articles.application.usecases.*;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,8 +20,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -38,19 +41,22 @@ public class ArticleController {
     private final ListArticlesUseCase listArticles;
     private final UpdateArticleByIdUseCase updateArticleById;
     private final DeleteArticleByIdUseCase deleteArticleById;
+    private final UpdateArticleCoverUseCase updateArticleCover;
 
     public ArticleController(
         ListArticlesUseCase listArticles,
         GetArticleByIdUseCase getArticleById,
         CreateArticleUseCase createArticle,
         UpdateArticleByIdUseCase updateArticleById,
-        DeleteArticleByIdUseCase deleteArticleById
+        DeleteArticleByIdUseCase deleteArticleById,
+        UpdateArticleCoverUseCase updateArticleCover
     ) {
         this.createArticle = createArticle;
         this.getArticleById = getArticleById;
         this.listArticles = listArticles;
         this.updateArticleById = updateArticleById;
         this.deleteArticleById = deleteArticleById;
+        this.updateArticleCover = updateArticleCover;
     }
 
     @Operation(
@@ -223,6 +229,45 @@ public class ArticleController {
     ) {
         FullArticleDto response = this.updateArticleById.execute(id, body);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Update cover of Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Uploads a new cover and updates the alternative text. The previous file will be replaced."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Article's cover updated successfully",
+            content = @Content(schema = @Schema(implementation = UserSummaryDto.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid file format or size"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error during file storage")
+    })
+    @PatchMapping(
+            value = "/{id}/cover",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<FullArticleDto> updateCover(
+        @PathVariable("id") Long id,
+
+        @Parameter(description = "New Article Cover file")
+        @RequestPart(value = "file") MultipartFile file,
+
+        @Parameter(description = "Article alternative text")
+        @RequestPart(value = "alternative_text", required = false) String alternativeText
+    ) {
+        FullArticleDto recipe = this.updateArticleCover.execute(id, file, alternativeText);
+
+        URI uri = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}/cover")
+            .buildAndExpand(recipe.id())
+            .toUri();
+
+        return ResponseEntity.created(uri).body(recipe);
     }
 
     @Operation(
