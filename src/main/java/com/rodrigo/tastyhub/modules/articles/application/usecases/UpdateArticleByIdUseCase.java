@@ -7,8 +7,10 @@ import com.rodrigo.tastyhub.modules.articles.domain.model.Article;
 import com.rodrigo.tastyhub.modules.articles.domain.service.ArticleService;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
+import com.rodrigo.tastyhub.shared.kernel.annotations.RequiresVerification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +18,8 @@ public class UpdateArticleByIdUseCase {
     private final ArticleService articleService;
     private final SecurityService securityService;
 
+    @Transactional
+    @RequiresVerification
     public FullArticleDto execute(Long articleId, UpdateArticleDto newData) {
         User user = this.securityService.getCurrentUser();
 
