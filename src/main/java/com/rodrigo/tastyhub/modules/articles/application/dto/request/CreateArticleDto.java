@@ -19,7 +19,7 @@ public record CreateArticleDto(
     @NotNull(message = "Article must have a content!")
     String content,
 
-    @Schema(example = "true", description = "Visibility of recipe")
+    @Schema(example = "true", description = "Visibility of article")
     Boolean isPublic,
 
     @Schema(description = "ISO 639-1 language code with region", example = "en-US")
