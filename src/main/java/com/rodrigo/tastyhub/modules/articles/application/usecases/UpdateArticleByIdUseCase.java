@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UpdateArticleById {
+public class UpdateArticleByIdUseCase {
     private final ArticleService articleService;
     private final SecurityService securityService;
 
