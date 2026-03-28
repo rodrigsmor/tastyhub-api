@@ -102,6 +102,14 @@ public class Article {
         if (title != null) this.isPublic = isPublic;
     }
 
+    public void updateCover(
+        String newCoverUrl,
+        String newCoverAlt
+    ) {
+        this.coverUrl = newCoverUrl;
+        this.coverAlt = (newCoverUrl == null) ? null : newCoverAlt;
+    }
+
     public void validateOwnership(Long currentUserId) {
         if (this.author == null || !this.author.getId().equals(currentUserId)) {
             throw new ForbiddenException("You are not the author of this recipe and cannot modify it.");
