@@ -92,6 +92,19 @@ public class ArticleService {
         return articleRepository.save(article);
     }
 
+    public Article updateCover(
+        Long articleId,
+        String newCoverUrl,
+        String newAlternativeText,
+        Long userId
+    ) {
+        Article article = this.findByIdOrThrow(articleId);
+        article.validateOwnership(articleId);
+        article.updateCover(newCoverUrl, newAlternativeText);
+        return articleRepository.save(article);
+    }
+
+
     public void delete(Long articleId, Long ownerId) {
         Article article = this.findByIdOrThrow(articleId);
 
