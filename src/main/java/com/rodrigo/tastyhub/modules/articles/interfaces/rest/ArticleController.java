@@ -1,12 +1,14 @@
 package com.rodrigo.tastyhub.modules.articles.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.articles.application.dto.request.CreateArticleDto;
+import com.rodrigo.tastyhub.modules.articles.application.dto.request.UpdateArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ArticlePaginationDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.FullArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ListArticlesQuery;
 import com.rodrigo.tastyhub.modules.articles.application.usecases.CreateArticleUseCase;
 import com.rodrigo.tastyhub.modules.articles.application.usecases.GetArticleByIdUseCase;
 import com.rodrigo.tastyhub.modules.articles.application.usecases.ListArticlesUseCase;
+import com.rodrigo.tastyhub.modules.articles.application.usecases.UpdateArticleByIdUseCase;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,15 +39,18 @@ public class ArticleController {
     private final CreateArticleUseCase createArticle;
     private final GetArticleByIdUseCase getArticleById;
     private final ListArticlesUseCase listArticles;
+    private final UpdateArticleByIdUseCase updateArticleById;
 
     public ArticleController(
         ListArticlesUseCase listArticles,
         GetArticleByIdUseCase getArticleById,
-        CreateArticleUseCase createArticle
+        CreateArticleUseCase createArticle,
+        UpdateArticleByIdUseCase updateArticleById
     ) {
         this.createArticle = createArticle;
         this.getArticleById = getArticleById;
         this.listArticles = listArticles;
+        this.updateArticleById = updateArticleById;
     }
 
     @Operation(
@@ -192,6 +197,31 @@ public class ArticleController {
         @ParameterObject @Valid ListArticlesQuery request
     ) {
         ArticlePaginationDto response = this.listArticles.execute(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Update an existing Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Updates article details including titles, content, visibility and language."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Article updated successfully",
+            content = @Content(schema = @Schema(implementation = FullArticleDto.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid input data or validation failed"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: You are not the owner of this article"),
+        @ApiResponse(responseCode = "404", description = "Article not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<FullArticleDto> updateArticleById(
+        @PathVariable("id") Long id,
+        @RequestBody @Valid UpdateArticleDto body
+    ) {
+        FullArticleDto response = this.updateArticleById.execute(id, body);
         return ResponseEntity.ok(response);
     }
 }
