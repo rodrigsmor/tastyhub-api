@@ -5,10 +5,7 @@ import com.rodrigo.tastyhub.modules.articles.application.dto.request.UpdateArtic
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ArticlePaginationDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.FullArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ListArticlesQuery;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.CreateArticleUseCase;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.GetArticleByIdUseCase;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.ListArticlesUseCase;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.UpdateArticleByIdUseCase;
+import com.rodrigo.tastyhub.modules.articles.application.usecases.*;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,17 +37,20 @@ public class ArticleController {
     private final GetArticleByIdUseCase getArticleById;
     private final ListArticlesUseCase listArticles;
     private final UpdateArticleByIdUseCase updateArticleById;
+    private final DeleteArticleByIdUseCase deleteArticleById;
 
     public ArticleController(
         ListArticlesUseCase listArticles,
         GetArticleByIdUseCase getArticleById,
         CreateArticleUseCase createArticle,
-        UpdateArticleByIdUseCase updateArticleById
+        UpdateArticleByIdUseCase updateArticleById,
+        DeleteArticleByIdUseCase deleteArticleById
     ) {
         this.createArticle = createArticle;
         this.getArticleById = getArticleById;
         this.listArticles = listArticles;
         this.updateArticleById = updateArticleById;
+        this.deleteArticleById = deleteArticleById;
     }
 
     @Operation(
@@ -223,5 +223,25 @@ public class ArticleController {
     ) {
         FullArticleDto response = this.updateArticleById.execute(id, body);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Delete an Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Permanently removes an article from the platform. Only the author or an administrator can perform this action."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Article deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: You do not have permission to delete this article"),
+        @ApiResponse(responseCode = "404", description = "Article not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteArticleById(
+            @PathVariable("id") Long articleId
+    ) {
+        this.deleteArticleById.execute(articleId);
+        return ResponseEntity.noContent().build();
     }
 }
