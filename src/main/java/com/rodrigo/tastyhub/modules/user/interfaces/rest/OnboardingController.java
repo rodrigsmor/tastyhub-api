@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConne
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
+import com.rodrigo.tastyhub.modules.user.application.usecases.OnboardingUpdateProfileUseCase;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
@@ -30,9 +31,14 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/onboarding")
 public class OnboardingController {
     private final OnboardingService onboardingService;
+    private final OnboardingUpdateProfileUseCase updateProfile;
 
-    public OnboardingController(OnboardingService onboardingService) {
+    public OnboardingController(
+        OnboardingService onboardingService,
+        OnboardingUpdateProfileUseCase updateProfile
+    ) {
         this.onboardingService = onboardingService;
+        this.updateProfile = updateProfile;
     }
 
     @Operation(
@@ -57,7 +63,8 @@ public class OnboardingController {
         @Parameter(description = "Profile picture file")
         @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        return this.onboardingService.updateUserProfile(request, file);
+        OnboardingProgressDto response = this.updateProfile.execute(request, file);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
