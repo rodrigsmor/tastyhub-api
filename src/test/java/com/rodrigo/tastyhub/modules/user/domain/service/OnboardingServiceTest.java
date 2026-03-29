@@ -3,7 +3,6 @@ package com.rodrigo.tastyhub.modules.user.domain.service;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
@@ -25,17 +24,13 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -77,68 +72,81 @@ class OnboardingServiceTest {
     @Nested
     @DisplayName("Tests for Update User Profile Method")
     class UpdateProfileTests {
-        @BeforeEach
-        void commonMocks() {
-            lenient().when(userRepository.existsByUsernameAndIdNot(anyString(), anyLong())).thenReturn(false);
-        }
 
         @Test
-        @DisplayName("Should update profile picture and user data when a file is provided")
-        void shouldUpdateProfileWithFile() {
-            OnboardingProfileRequest request = new OnboardingProfileRequest(
-                "new.username",
-                "New bio",
-                "Alt text",
-                LocalDate.parse("1995-08-25")
-            );
-            MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
+        @DisplayName("Should update profile data and set status to STEP_2")
+        void shouldUpdateProfileSuccessfully() {
+            Long userId = 1L;
+            String newUsername = "new.username";
+            String newBio = "New bio";
+            String profileUrl = "https://cdn.com/pic.jpg";
+            String altText = "Alt text";
+            LocalDate dob = LocalDate.parse("1995-08-25");
 
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.existsByUsernameAndIdNot(anyString(), anyLong())).thenReturn(false);
+            when(onboardingService.findUserById(userId)).thenReturn(fakeUser);
+            when(userRepository.existsByUsernameAndIdNot(newUsername, userId)).thenReturn(false);
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
 
-            ResponseEntity<OnboardingProgressDto> response = onboardingService.updateUserProfile(request, file);
+            User response = onboardingService.updateProfile(
+                userId,
+                newUsername,
+                newBio,
+                profileUrl,
+                altText,
+                dob
+            );
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertEquals("new.username", fakeUser.getUsername());
-            assertEquals("New bio", fakeUser.getBio());
-            assertEquals(OnboardingStatus.STEP_2, fakeUser.getOnboardingStatus());
+            assertEquals(newUsername, response.getUsername());
+            assertEquals(newBio, response.getBio());
+            assertEquals(profileUrl, response.getProfilePictureUrl());
+            assertEquals(altText, response.getProfilePictureAlt());
+            assertEquals(dob, response.getDateOfBirth());
+            assertEquals(OnboardingStatus.STEP_2, response.getOnboardingStatus());
 
-            verify(userService, times(1)).updateProfilePicture(eq(file), eq("Alt text"));
             verify(userRepository).save(fakeUser);
         }
 
         @Test
         @DisplayName("Should throw error if username is already taken")
         void shouldThrowErrorIfUsernameTaken() {
-            OnboardingProfileRequest request = new OnboardingProfileRequest(
-                "taken.user",
-                "bio",
-                null,
-                LocalDate.parse("1995-08-25")
-            );
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.existsByUsernameAndIdNot("taken.user", 1L)).thenReturn(true);
+            Long userId = 1L;
+            String takenUsername = "taken.user";
+
+            when(onboardingService.findUserById(userId)).thenReturn(fakeUser);
+            when(userRepository.existsByUsernameAndIdNot(takenUsername, userId)).thenReturn(true);
 
             assertThrows(BadCredentialsException.class, () ->
-                onboardingService.updateUserProfile(request, null)
+                onboardingService.updateProfile(
+                    userId,
+                    takenUsername,
+                    "bio",
+                    null,
+                    null,
+                    LocalDate.now()
+                )
             );
+
             verify(userRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should return error if username exceeds 20 characters")
-        void shouldReturnErrorIfUsernameExceedsLimit() {
-            String longUsername = "username_muito_longo_mesmo";
-            OnboardingProfileRequest request = new OnboardingProfileRequest(
-                longUsername,
+        @DisplayName("Should not update profile picture if profileUrl is null")
+        void shouldNotUpdatePictureIfUrlIsNull() {
+            fakeUser.setProfilePictureUrl("old-url.jpg");
+            when(onboardingService.findUserById(1L)).thenReturn(fakeUser);
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            User response = onboardingService.updateProfile(
+                1L,
+                "user",
                 "bio",
                 null,
-                LocalDate.parse("1995-08-25")
+                "new alt",
+                LocalDate.now()
             );
 
-            lenient().when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            lenient().when(userRepository.existsByUsernameAndIdNot(anyString(), anyLong())).thenReturn(false);
+            assertEquals("old-url.jpg", response.getProfilePictureUrl()); // Manteve a antiga
+            verify(userRepository).save(fakeUser);
         }
     }
 
