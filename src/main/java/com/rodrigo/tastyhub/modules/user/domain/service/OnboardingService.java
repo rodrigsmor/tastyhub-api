@@ -1,6 +1,5 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
@@ -10,18 +9,17 @@ import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
+import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
-import com.rodrigo.tastyhub.shared.kernel.annotations.FileCleanup;
-import com.rodrigo.tastyhub.shared.kernel.annotations.FileRollback;
 import jakarta.transaction.Transactional;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -38,26 +36,36 @@ public class OnboardingService {
     @Autowired
     private TagService tagService;
 
-    @Transactional
-    @FileRollback
-    @FileCleanup
-    public ResponseEntity<OnboardingProgressDto> updateUserProfile(OnboardingProfileRequest request, MultipartFile file) {
-        User user = securityService.getCurrentUser();
+    public User findUserById(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("The user provided cannot be found"));
+    }
 
-        if (userRepository.existsByUsernameAndIdNot(request.username(), user.getId())) {
+    public User updateProfile(
+        Long userId,
+        String username,
+        String bio,
+        String profileUrl,
+        String profileAlt,
+        LocalDate dateOfBirth
+    ) {
+        User user = this.findUserById(userId);
+
+        if (userRepository.existsByUsernameAndIdNot(username, userId)) {
             throw new BadCredentialsException("Invalid input or username already taken");
         }
 
-        if (file != null && !file.isEmpty()) {
-            userService.updateProfilePicture(file, request.profilePictureAlt());
+        if (profileUrl != null) {
+            user.setProfilePictureUrl(profileUrl);
+            user.setProfilePictureAlt(profileAlt);
         }
 
-        user.setBio(request.bio());
-        user.setUsername(request.username());
-        user.setDateOfBirth(request.dateOfBirth());
+        user.setBio(bio);
+        user.setUsername(username);
+        user.setDateOfBirth(dateOfBirth);
         user.setOnboardingStatus(OnboardingStatus.STEP_2);
 
-        return ResponseEntity.ok(this.getOnboardingProgressResponse(userRepository.save(user)));
+        return userRepository.save(user);
     }
 
     public void startOnboarding(User user) {
