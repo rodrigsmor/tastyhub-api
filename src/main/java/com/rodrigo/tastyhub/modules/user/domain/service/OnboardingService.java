@@ -1,8 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
@@ -85,30 +83,29 @@ public class OnboardingService {
         return userRepository.save(user);
     }
 
-    public void startOnboarding(User user) {
-        user.startOnboarding();
-        userRepository.save(user);
-    }
+    public User followInitialUsers(
+        Long userId,
+        Collection<User> usersToFollow,
+        boolean shouldSkip
+    ) {
+        User user = findUserById(userId);
 
-    @Transactional
-    public ResponseEntity<OnboardingProgressDto> followInitialUsers(OnboardingConnectionsRequest request, boolean shouldSkip) {
-        User currentUser = securityService.getCurrentUser();
-
-        if (shouldSkip) {
-            return finalizeOnboarding(currentUser);
-        }
-
-        if (request.hasUserIds()) {
-            List<User> usersToFollow = userRepository.findAllById(request.userIds());
-
+        if (!shouldSkip) {
             for (User targetUser : usersToFollow) {
-                if (!targetUser.getId().equals(currentUser.getId())) {
-                    currentUser.followUser(targetUser);
+                if (!targetUser.getId().equals(user.getId())) {
+                    user.followUser(targetUser);
                 }
             }
         }
 
-        return finalizeOnboarding(currentUser);
+        user.completeOnboarding();
+
+        return userRepository.save(user);
+    }
+
+    public void startOnboarding(User user) {
+        user.startOnboarding();
+        userRepository.save(user);
     }
 
     @Transactional
@@ -149,15 +146,6 @@ public class OnboardingService {
             status,
             status.getNext(),
             user.isOnboardingFinished()
-        );
-    }
-
-    private ResponseEntity<OnboardingProgressDto> finalizeOnboarding(User user) {
-        user.completeOnboarding();
-
-        return ResponseEntity.ok(
-                this.getOnboardingProgressResponse(userRepository.save(user)
-            )
         );
     }
 
