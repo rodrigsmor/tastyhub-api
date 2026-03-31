@@ -68,38 +68,32 @@ public class OnboardingService {
         return userRepository.save(user);
     }
 
+    public User selectInterests(
+        Long userId,
+        Collection<Tag> tagsToFollow,
+        Collection<Tag> unfollowTags,
+        Boolean shouldSkip
+    ) {
+        User user = this.findUserById(userId);
+
+        if (!shouldSkip) {
+            if (unfollowTags != null && unfollowTags.size() > 0) {
+                unfollowTags.forEach(user::unfollowTag);
+            }
+
+            if (tagsToFollow != null && tagsToFollow.size() > 0) {
+                tagsToFollow.forEach(user::followTag);
+            }
+        }
+
+        user.setOnboardingStatus(OnboardingStatus.STEP_3);
+
+        return userRepository.save(user);
+    }
+
     public void startOnboarding(User user) {
         user.startOnboarding();
         userRepository.save(user);
-    }
-
-    @Transactional
-    public ResponseEntity<OnboardingProgressDto> selectInterests(
-        OnboardingInterestsRequest request,
-        boolean shouldSkip
-    ) {
-        User user = securityService.getCurrentUser();
-
-        if (shouldSkip) {
-            return completeStepAndResponse(user);
-        }
-
-        if (request.hasUnfollowTagIds()) {
-            List<Tag> tagsToUnfollow = tagService.findAllById(request.unfollowTagIds());
-            tagsToUnfollow.forEach(user::unfollowTag);
-        }
-
-        if (request.hasNewTags()) {
-            Set<Tag> newTags = tagService.ensureTagsExist(request.newTags());
-            newTags.forEach(user::followTag);
-        }
-
-        if (request.hasTagIds()) {
-            List<Tag> existingTags = tagService.findAllById(request.tagIds());
-            existingTags.forEach(user::followTag);
-        }
-
-        return completeStepAndResponse(user);
     }
 
     @Transactional
@@ -161,15 +155,6 @@ public class OnboardingService {
             status,
             status.getNext(),
             user.isOnboardingFinished()
-        );
-    }
-
-    private ResponseEntity<OnboardingProgressDto> completeStepAndResponse(User user) {
-        user.setOnboardingStatus(OnboardingStatus.STEP_3);
-
-        return ResponseEntity.ok(
-                this.getOnboardingProgressResponse(userRepository.save(user)
-            )
         );
     }
 
