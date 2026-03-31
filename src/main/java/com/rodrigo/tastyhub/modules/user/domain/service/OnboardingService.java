@@ -1,7 +1,6 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
-import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
@@ -30,9 +29,6 @@ public class OnboardingService {
 
     @Autowired
     private SecurityService securityService;
-
-    @Autowired
-    private TagService tagService;
 
     public User findUserById(Long userId) {
         return userRepository.findById(userId)
@@ -101,11 +97,6 @@ public class OnboardingService {
         user.completeOnboarding();
 
         return userRepository.save(user);
-    }
-
-    public void startOnboarding(User user) {
-        user.startOnboarding();
-        userRepository.save(user);
     }
 
     @Transactional
