@@ -4,6 +4,7 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConne
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
+import com.rodrigo.tastyhub.modules.user.application.usecases.OnboardingSelectInterestsUseCase;
 import com.rodrigo.tastyhub.modules.user.application.usecases.OnboardingUpdateProfileUseCase;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
@@ -31,14 +32,17 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/onboarding")
 public class OnboardingController {
     private final OnboardingService onboardingService;
+    private final OnboardingSelectInterestsUseCase selectInterests;
     private final OnboardingUpdateProfileUseCase updateProfile;
 
     public OnboardingController(
         OnboardingService onboardingService,
+        OnboardingSelectInterestsUseCase selectInterests,
         OnboardingUpdateProfileUseCase updateProfile
     ) {
         this.onboardingService = onboardingService;
         this.updateProfile = updateProfile;
+        this.selectInterests = selectInterests;
     }
 
     @Operation(
@@ -82,7 +86,8 @@ public class OnboardingController {
         @Valid @RequestBody OnboardingInterestsRequest request,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
-        return this.onboardingService.selectInterests(request, shouldSkip);
+        OnboardingProgressDto response = this.selectInterests.execute(request, shouldSkip);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
