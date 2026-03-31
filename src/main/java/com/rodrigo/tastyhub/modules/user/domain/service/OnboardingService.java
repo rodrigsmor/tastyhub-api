@@ -70,20 +70,14 @@ public class OnboardingService {
 
     public User selectInterests(
         Long userId,
-        Collection<Tag> tagsToFollow,
-        Collection<Tag> unfollowTags,
-        Boolean shouldSkip
+        Collection<Tag> follow,
+        Collection<Tag> unfollow,
+        boolean shouldSkip
     ) {
-        User user = this.findUserById(userId);
+        User user = findUserById(userId);
 
         if (!shouldSkip) {
-            if (unfollowTags != null && unfollowTags.size() > 0) {
-                unfollowTags.forEach(user::unfollowTag);
-            }
-
-            if (tagsToFollow != null && tagsToFollow.size() > 0) {
-                tagsToFollow.forEach(user::followTag);
-            }
+            user.updateInterests(follow, unfollow);
         }
 
         user.setOnboardingStatus(OnboardingStatus.STEP_3);
