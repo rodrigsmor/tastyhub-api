@@ -14,6 +14,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,6 +25,29 @@ public class UserService {
     private final ImageStorageService imageStorageService;
 
     private final SecurityService securityService;
+
+    public List<User> findAllByIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> uniqueIds = new HashSet<>(userIds);
+        List<User> foundUsers = userRepository.findAllById(uniqueIds);
+
+        if (foundUsers.size() != uniqueIds.size()) {
+            Set<Long> foundIds = foundUsers.stream()
+                .map(User::getId)
+                .collect(Collectors.toSet());
+
+            List<Long> missingIds = uniqueIds.stream()
+                .filter(id -> !foundIds.contains(id))
+                .toList();
+
+            throw new ResourceNotFoundException("Users not found for IDs: " + missingIds);
+        }
+
+        return foundUsers;
+    }
 
     public boolean existsById(Long userId) {
         return userRepository.existsById(userId);
