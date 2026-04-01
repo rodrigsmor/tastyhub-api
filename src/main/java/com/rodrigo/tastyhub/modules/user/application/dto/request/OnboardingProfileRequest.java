@@ -11,7 +11,7 @@ import java.time.LocalDate;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
 public record OnboardingProfileRequest(
-        @Schema(
+    @Schema(
         description = "Unique handle for the user profile",
         example = "chef_johndoe",
         maxLength = 20,
@@ -21,7 +21,7 @@ public record OnboardingProfileRequest(
     @Size(max = 20, message = "Username must not exceed 20 characters")
     String username,
 
-        @Schema(
+    @Schema(
         description = "Brief user biography or description",
         example = "Passionate home cook and food explorer.",
         maxLength = 280,
@@ -30,7 +30,7 @@ public record OnboardingProfileRequest(
     @Size(max = 280, message = "Bio must not exceed 280 characters")
     String bio,
 
-        @Schema(
+    @Schema(
         description = "Alternative text for the profile image (accessibility)",
         example = "John Doe smiling in a kitchen setting",
         requiredMode = Schema.RequiredMode.NOT_REQUIRED

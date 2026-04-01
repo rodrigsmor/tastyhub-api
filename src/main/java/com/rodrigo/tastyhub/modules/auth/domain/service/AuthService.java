@@ -7,7 +7,6 @@ import com.rodrigo.tastyhub.modules.auth.domain.repository.RefreshTokenRepositor
 import com.rodrigo.tastyhub.modules.auth.domain.repository.VerificationTokenRepository;
 import com.rodrigo.tastyhub.modules.user.domain.model.Role;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
-import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import com.rodrigo.tastyhub.shared.exception.*;
 import com.rodrigo.tastyhub.modules.auth.infrastructure.JwtGenerator;
 import com.rodrigo.tastyhub.modules.auth.domain.model.RefreshToken;
@@ -35,9 +34,6 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private OnboardingService onboardingService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -135,9 +131,11 @@ public class AuthService {
         }
 
         User user = vToken.getUser();
-        onboardingService.startOnboarding(user);
+
+        user.startOnboarding();
 
         verificationTokenRepository.delete(vToken);
+        userRepository.save(user);
         return generateAuthResponse(user);
     }
 

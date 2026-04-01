@@ -4,9 +4,9 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConne
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
+import com.rodrigo.tastyhub.modules.user.application.usecases.*;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
-import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,10 +29,24 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/onboarding")
 public class OnboardingController {
-    private final OnboardingService onboardingService;
+    private final OnboardingGetCurrentStepUseCase getCurrentStep;
+    private final OnboardingBackPreviousStepUseCase backPreviousStep;
+    private final OnboardingSelectInitialUsersUseCase selectInitialUsers;
+    private final OnboardingSelectInterestsUseCase selectInterests;
+    private final OnboardingUpdateProfileUseCase updateProfile;
 
-    public OnboardingController(OnboardingService onboardingService) {
-        this.onboardingService = onboardingService;
+    public OnboardingController(
+        OnboardingSelectInterestsUseCase selectInterests,
+        OnboardingUpdateProfileUseCase updateProfile,
+        OnboardingSelectInitialUsersUseCase selectInitialUsers,
+        OnboardingBackPreviousStepUseCase backPreviousStep,
+        OnboardingGetCurrentStepUseCase getCurrentStep
+    ) {
+        this.updateProfile = updateProfile;
+        this.selectInterests = selectInterests;
+        this.selectInitialUsers = selectInitialUsers;
+        this.getCurrentStep = getCurrentStep;
+        this.backPreviousStep = backPreviousStep;
     }
 
     @Operation(
@@ -57,7 +71,8 @@ public class OnboardingController {
         @Parameter(description = "Profile picture file")
         @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        return this.onboardingService.updateUserProfile(request, file);
+        OnboardingProgressDto response = this.updateProfile.execute(request, file);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
@@ -75,7 +90,8 @@ public class OnboardingController {
         @Valid @RequestBody OnboardingInterestsRequest request,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
-        return this.onboardingService.selectInterests(request, shouldSkip);
+        OnboardingProgressDto response = this.selectInterests.execute(request, shouldSkip);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
@@ -93,7 +109,8 @@ public class OnboardingController {
         @RequestBody OnboardingConnectionsRequest connections,
         @RequestParam(value = "shouldSkip", defaultValue = "false") boolean shouldSkip
     ) {
-        return this.onboardingService.followInitialUsers(connections, shouldSkip);
+        OnboardingProgressDto response = this.selectInitialUsers.execute(connections, shouldSkip);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
@@ -110,13 +127,14 @@ public class OnboardingController {
     })
     @PatchMapping("/back")
     public ResponseEntity<OnboardingProgressDto> backToPreviousStep() throws BadRequestException {
-        return this.onboardingService.backToPreviousStep();
+        OnboardingProgressDto response = this.backPreviousStep.execute();
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
         summary = "Get current onboarding step",
         description = "Retrieves the current onboarding status for the authenticated user. " +
-                "This helps the frontend determine which screen to display next.",
+            "This helps the frontend determine which screen to display next.",
         security = { @SecurityRequirement(name = "bearerAuth") }
     )
     @ApiResponses({
@@ -130,7 +148,7 @@ public class OnboardingController {
     })
     @GetMapping("/step")
     public ResponseEntity<OnboardingProgressDto> getCurrentStep() {
-        OnboardingProgressDto response = this.onboardingService.getCurrentStep();
+        OnboardingProgressDto response = this.getCurrentStep.execute();
         return ResponseEntity.ok(response);
     }
 }

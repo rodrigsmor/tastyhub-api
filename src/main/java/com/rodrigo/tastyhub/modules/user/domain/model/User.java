@@ -225,6 +225,11 @@ public class User {
         tag.getFollowers().remove(this);
     }
 
+    public void updateInterests(Collection<Tag> toFollow, Collection<Tag> toUnfollow) {
+        if (toUnfollow != null) toUnfollow.forEach(this::unfollowTag);
+        if (toFollow != null) toFollow.forEach(this::followTag);
+    }
+
     public void followUser(User targetUser) {
         Follow follow = new Follow();
         follow.setId(new FollowId(this.id, targetUser.getId()));
