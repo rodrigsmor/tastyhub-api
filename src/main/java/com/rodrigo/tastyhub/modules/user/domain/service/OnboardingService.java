@@ -1,6 +1,5 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
-import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
@@ -8,11 +7,7 @@ import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
-import jakarta.transaction.Transactional;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +17,7 @@ import java.util.*;
 @Service
 public class OnboardingService {
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private SecurityService securityService;
 
     public User findUserById(Long userId) {
         return userRepository.findById(userId)
@@ -99,9 +88,8 @@ public class OnboardingService {
         return userRepository.save(user);
     }
 
-    @Transactional
-    public ResponseEntity<OnboardingProgressDto> backToPreviousStep() throws BadRequestException {
-        User user = securityService.getCurrentUser();
+    public User backToPreviousStep(Long userId) {
+        User user = this.findUserById(userId);
 
         if (user.isOnboardingFinished()) {
             throw new ForbiddenException("Onboarding has already been completed. Status cannot be reverted.");        }
@@ -113,7 +101,7 @@ public class OnboardingService {
         OnboardingStatus currentStatus = user.getOnboardingStatus();
 
         if (currentStatus == OnboardingStatus.STEP_1) {
-            throw new BadRequestException("Cannot go back: User is already at the initial onboarding step.");
+            throw new IllegalArgumentException("Cannot go back: User is already at the initial onboarding step.");
         }
 
         OnboardingStatus previousStep = (currentStatus == OnboardingStatus.STEP_3)
@@ -122,29 +110,6 @@ public class OnboardingService {
 
         user.setOnboardingStatus(previousStep);
 
-        return ResponseEntity.ok(
-                this.getOnboardingProgressResponse(userRepository.save(user)
-            )
-        );
-    }
-
-    public OnboardingProgressDto getCurrentStep() {
-        User user = securityService.getCurrentUser();
-
-        OnboardingStatus status = user.getOnboardingStatus();
-
-        return new OnboardingProgressDto(
-            status,
-            status.getNext(),
-            user.isOnboardingFinished()
-        );
-    }
-
-    private OnboardingProgressDto getOnboardingProgressResponse(User user) {
-        return new OnboardingProgressDto(
-            user.getOnboardingStatus(),
-            user.getOnboardingStatus().getNext(),
-            user.isOnboardingFinished()
-        );
+        return userRepository.save(user);
     }
 }
