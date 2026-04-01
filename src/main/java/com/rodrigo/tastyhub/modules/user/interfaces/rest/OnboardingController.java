@@ -4,12 +4,9 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConne
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingProfileRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
-import com.rodrigo.tastyhub.modules.user.application.usecases.OnboardingSelectInitialUsersUseCase;
-import com.rodrigo.tastyhub.modules.user.application.usecases.OnboardingSelectInterestsUseCase;
-import com.rodrigo.tastyhub.modules.user.application.usecases.OnboardingUpdateProfileUseCase;
+import com.rodrigo.tastyhub.modules.user.application.usecases.*;
 import com.rodrigo.tastyhub.modules.user.domain.annotations.RequiresOnboardingStep;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
-import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,21 +29,24 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/onboarding")
 public class OnboardingController {
-    private final OnboardingService onboardingService;
+    private final OnboardingGetCurrentStepUseCase getCurrentStep;
+    private final OnboardingBackPreviousStepUseCase backPreviousStep;
     private final OnboardingSelectInitialUsersUseCase selectInitialUsers;
     private final OnboardingSelectInterestsUseCase selectInterests;
     private final OnboardingUpdateProfileUseCase updateProfile;
 
     public OnboardingController(
-        OnboardingService onboardingService,
         OnboardingSelectInterestsUseCase selectInterests,
         OnboardingUpdateProfileUseCase updateProfile,
-        OnboardingSelectInitialUsersUseCase selectInitialUsers
+        OnboardingSelectInitialUsersUseCase selectInitialUsers,
+        OnboardingBackPreviousStepUseCase backPreviousStep,
+        OnboardingGetCurrentStepUseCase getCurrentStep
     ) {
-        this.onboardingService = onboardingService;
         this.updateProfile = updateProfile;
         this.selectInterests = selectInterests;
         this.selectInitialUsers = selectInitialUsers;
+        this.getCurrentStep = getCurrentStep;
+        this.backPreviousStep = backPreviousStep;
     }
 
     @Operation(
@@ -127,13 +127,14 @@ public class OnboardingController {
     })
     @PatchMapping("/back")
     public ResponseEntity<OnboardingProgressDto> backToPreviousStep() throws BadRequestException {
-        return this.onboardingService.backToPreviousStep();
+        OnboardingProgressDto response = this.backPreviousStep.execute();
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
         summary = "Get current onboarding step",
         description = "Retrieves the current onboarding status for the authenticated user. " +
-                "This helps the frontend determine which screen to display next.",
+            "This helps the frontend determine which screen to display next.",
         security = { @SecurityRequirement(name = "bearerAuth") }
     )
     @ApiResponses({
@@ -147,7 +148,7 @@ public class OnboardingController {
     })
     @GetMapping("/step")
     public ResponseEntity<OnboardingProgressDto> getCurrentStep() {
-        OnboardingProgressDto response = this.onboardingService.getCurrentStep();
+        OnboardingProgressDto response = this.getCurrentStep.execute();
         return ResponseEntity.ok(response);
     }
 }
