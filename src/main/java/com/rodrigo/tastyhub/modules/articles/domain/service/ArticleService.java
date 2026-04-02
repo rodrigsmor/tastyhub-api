@@ -99,7 +99,7 @@ public class ArticleService {
         Long userId
     ) {
         Article article = this.findByIdOrThrow(articleId);
-        article.validateOwnership(articleId);
+        article.validateOwnership(userId);
         article.updateCover(newCoverUrl, newAlternativeText);
         return articleRepository.save(article);
     }
