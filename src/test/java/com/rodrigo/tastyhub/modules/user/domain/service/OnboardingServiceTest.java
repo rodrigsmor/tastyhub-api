@@ -11,6 +11,7 @@ import com.rodrigo.tastyhub.modules.user.domain.model.UserStatus;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
 import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
+import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -67,6 +69,48 @@ class OnboardingServiceTest {
 
         fakeUser.setFollowedTags(new HashSet<>());
         fakeUser.setOnboardingStatus(OnboardingStatus.STEP_1);
+    }
+
+    @Nested
+    @DisplayName("Tests for Find User By Id")
+    class FindByIdTests {
+        @Test
+        @DisplayName("Should return user when a valid ID is provided")
+        void shouldReturnUserWhenIdExists() {
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
+
+            User result = onboardingService.findUserById(1L);
+
+            assertNotNull(result);
+            assertEquals(1L, result.getId());
+            assertEquals("old.username", result.getUsername());
+            verify(userRepository, times(1)).findById(1L);
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when user does not exist")
+        void shouldThrowExceptionWhenUserNotFound() {
+            when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+            ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
+                onboardingService.findUserById(999L)
+            );
+
+            assertEquals("The user provided cannot be found", exception.getMessage());
+            verify(userRepository, times(1)).findById(999L);
+        }
+
+        @Test
+        @DisplayName("Should call repository with correct ID")
+        void shouldCallRepositoryWithCorrectParameters() {
+            Long targetId = 5L;
+            fakeUser.setId(targetId);
+            when(userRepository.findById(targetId)).thenReturn(Optional.of(fakeUser));
+
+            onboardingService.findUserById(targetId);
+
+            verify(userRepository).findById(eq(targetId));
+        }
     }
 
     @Nested
