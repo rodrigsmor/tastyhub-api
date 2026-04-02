@@ -2,9 +2,6 @@ package com.rodrigo.tastyhub.modules.user.domain.service;
 
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
 import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
-import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.model.UserStatus;
@@ -13,7 +10,6 @@ import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
-import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,9 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -332,103 +325,62 @@ class OnboardingServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for Back To Previous Step Method")
-    class BackStepTests {
+    @DisplayName("Tests for Back to Previous Step")
+    class BackToPreviousStepTests {
+        @Test
+        @DisplayName("Should revert from STEP_3 to STEP_2 successfully")
+        void shouldRevertFromStep3ToStep2() {
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_3);
+            fakeUser.setStatus(UserStatus.ACTIVE);
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+            User result = onboardingService.backToPreviousStep(1L);
+
+            assertEquals(OnboardingStatus.STEP_2, result.getOnboardingStatus());
+            verify(userRepository).save(fakeUser);
+        }
 
         @Test
-        @DisplayName("1. Should throw ForbiddenException if onboarding is already finished")
+        @DisplayName("Should throw ForbiddenException if onboarding is already COMPLETED")
         void shouldThrowForbiddenIfCompleted() {
             fakeUser.setOnboardingStatus(OnboardingStatus.COMPLETED);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
 
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-
-            assertThrows(ForbiddenException.class, () -> onboardingService.backToPreviousStep());
+            assertThrows(ForbiddenException.class, () ->
+                onboardingService.backToPreviousStep(1L)
+            );
+            verify(userRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("2. Should throw UnauthorizedException if account is not verified")
+        @DisplayName("Should throw UnauthorizedException if user is not verified")
         void shouldThrowUnauthorizedIfNotVerified() {
+            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
             fakeUser.setStatus(UserStatus.PENDING);
-            fakeUser.setOnboardingStatus(OnboardingStatus.PENDING_VERIFICATION);
 
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
 
-            assertThrows(UnauthorizedException.class, () -> onboardingService.backToPreviousStep());
+            assertThrows(UnauthorizedException.class, () ->
+                onboardingService.backToPreviousStep(1L)
+            );
         }
 
         @Test
-        @DisplayName("3. Should throw BadRequestException if already at STEP_1")
-        void shouldThrowBadRequestIfAtStep1() {
+        @DisplayName("Should throw IllegalArgumentException if already at STEP_1")
+        void shouldThrowErrorIfAtFirstStep() {
             fakeUser.setOnboardingStatus(OnboardingStatus.STEP_1);
+            fakeUser.setStatus(UserStatus.ACTIVE);
 
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
 
-            BadRequestException ex = assertThrows(BadRequestException.class,
-                () -> onboardingService.backToPreviousStep());
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                onboardingService.backToPreviousStep(1L)
+            );
 
-            assertTrue(ex.getMessage().contains("initial onboarding step"));
-        }
-
-        @Test
-        @DisplayName("4. Should revert from STEP_3 to STEP_2 successfully")
-        void shouldRevertFromStep3ToStep2() throws BadRequestException {
-            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_3);
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
-
-            ResponseEntity<OnboardingProgressDto> response = onboardingService.backToPreviousStep();
-
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertEquals(OnboardingStatus.STEP_2, fakeUser.getOnboardingStatus());
-            verify(userRepository).save(fakeUser);
-        }
-
-        @Test
-        @DisplayName("5. Should revert from STEP_2 to STEP_1 successfully")
-        void shouldRevertFromStep2ToStep1() throws BadRequestException {
-            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
-
-            onboardingService.backToPreviousStep();
-
-            assertEquals(OnboardingStatus.STEP_1, fakeUser.getOnboardingStatus());
-            verify(userRepository).save(fakeUser);
-        }
-    }
-
-    @Nested
-    @DisplayName("Tests for Get Current Step Method")
-    class GetCurrentStepTests {
-
-        @Test
-        @DisplayName("Should return progress details based on user status")
-        void shouldReturnProgressDetails() {
-            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-
-            OnboardingProgressDto result = onboardingService.getCurrentStep();
-
-            assertNotNull(result);
-            assertEquals(OnboardingStatus.STEP_2, result.currentStatus());
-            assertEquals(OnboardingStatus.STEP_3, result.nextStepAction());
-            assertFalse(result.isCompleted());
-        }
-
-        @Test
-        @DisplayName("Should return isCompleted true when status is finished")
-        void shouldReturnCompletedTrue() {
-            fakeUser.setOnboardingStatus(OnboardingStatus.COMPLETED);
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-
-            OnboardingProgressDto result = onboardingService.getCurrentStep();
-
-            assertTrue(result.isCompleted());
-            assertEquals(OnboardingStatus.COMPLETED, result.currentStatus());
+            assertEquals("Cannot go back: User is already at the initial onboarding step.", exception.getMessage());
         }
     }
 }
