@@ -8,7 +8,6 @@ import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -35,7 +34,7 @@ public class OnboardingService {
         User user = this.findUserById(userId);
 
         if (userRepository.existsByUsernameAndIdNot(username, userId)) {
-            throw new BadCredentialsException("Invalid input or username already taken");
+            throw new IllegalArgumentException("Invalid input or username already taken");
         }
 
         if (profileUrl != null) {
