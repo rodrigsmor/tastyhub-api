@@ -319,4 +319,77 @@ class ArticleServiceTest {
             );
         }
     }
+
+    @Nested
+    @DisplayName("Tests for update Article Cover")
+    class UpdateCoverTests {
+        @Test
+        @DisplayName("Should successfully update cover and alt text when owner is valid")
+        void shouldUpdateCoverSuccessfully() {
+            Long articleId = 100L;
+            Long ownerId = 1L;
+            String newUrl = "https://images.com/new-cover.jpg";
+            String newAlt = "A beautiful food shot";
+
+            User author = new User();
+            author.setId(ownerId);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(articleId)).thenReturn(Optional.of(fakeArticle));
+            when(articleRepository.save(any(Article.class))).thenAnswer(i -> i.getArgument(0));
+
+            Article result = articleService.updateCover(articleId, newUrl, newAlt, ownerId);
+
+            assertEquals(newUrl, result.getCoverUrl());
+            assertEquals(newAlt, result.getCoverAlt());
+            verify(articleRepository).save(fakeArticle);
+        }
+
+        @Test
+        @DisplayName("Should throw ForbiddenException when a non-author tries to update the cover")
+        void shouldThrowForbiddenWhenNotAuthor() {
+            Long articleId = 100L;
+            Long hackerId = 999L;
+
+            User author = new User();
+            author.setId(1L);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(articleId)).thenReturn(Optional.of(fakeArticle));
+
+            assertThrows(ForbiddenException.class, () ->
+                articleService.updateCover(
+                    articleId,
+                    "url",
+                    "alt",
+                    hackerId
+                )
+            );
+
+            verify(articleRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should clear alt text if the cover URL is set to null")
+        void shouldClearAltTextWhenUrlIsNull() {
+            Long ownerId = 1L;
+            User author = new User();
+            author.setId(ownerId);
+            fakeArticle.setAuthor(author);
+            fakeArticle.setCoverAlt("Old Alt Text");
+
+            when(articleRepository.findById(100L)).thenReturn(Optional.of(fakeArticle));
+            when(articleRepository.save(any(Article.class))).thenAnswer(i -> i.getArgument(0));
+
+            Article result = articleService.updateCover(
+                100L,
+                null,
+                "New Alt",
+                ownerId
+            );
+
+            assertNull(result.getCoverUrl());
+            assertNull(result.getCoverAlt(), "Alt text should be null if URL is null according to business rule");
+        }
+    }
 }
