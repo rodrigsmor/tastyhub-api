@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingConnectionsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInterestsRequest;
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
+import com.rodrigo.tastyhub.modules.user.application.usecases.*;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
-import com.rodrigo.tastyhub.modules.user.domain.service.OnboardingService;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
-import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,7 +16,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -45,10 +42,19 @@ class OnboardingControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private OnboardingService onboardingService;
+    private OnboardingGetCurrentStepUseCase getCurrentStep;
 
     @MockitoBean
-    private SecurityService securityService;
+    private OnboardingBackPreviousStepUseCase backPreviousStep;
+
+    @MockitoBean
+    private OnboardingSelectInitialUsersUseCase selectInitialUsers;
+
+    @MockitoBean
+    private OnboardingSelectInterestsUseCase selectInterests;
+
+    @MockitoBean
+    private OnboardingUpdateProfileUseCase updateProfile;
 
     @Nested
     @DisplayName("Tests for PATCH /api/onboarding/profile")
@@ -63,8 +69,8 @@ class OnboardingControllerTest {
                 false
             );
 
-            when(onboardingService.updateUserProfile(any(), any()))
-                .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(updateProfile.execute(any(), any()))
+                .thenReturn(expectedResponse);
 
             MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -92,7 +98,7 @@ class OnboardingControllerTest {
                     .param("bio", "Some bio"))
                 .andExpect(status().isBadRequest());
 
-            verifyNoInteractions(onboardingService);
+            verifyNoInteractions(updateProfile);
         }
 
         @Test
@@ -104,8 +110,8 @@ class OnboardingControllerTest {
                 false
             );
 
-            when(onboardingService.updateUserProfile(any(), isNull()))
-                .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(updateProfile.execute(any(), isNull()))
+                .thenReturn(expectedResponse);
 
             mockMvc.perform(multipart(HttpMethod.PATCH, "/api/onboarding/profile")
                     .param("username", "johndoe")
@@ -128,8 +134,8 @@ class OnboardingControllerTest {
                 false
             );
 
-            when(onboardingService.selectInterests(any(), anyBoolean()))
-                    .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(selectInterests.execute(any(), anyBoolean()))
+                    .thenReturn(expectedResponse);
 
             mockMvc.perform(post("/api/onboarding/interests")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -147,8 +153,8 @@ class OnboardingControllerTest {
                 false
             );
 
-            when(onboardingService.selectInterests(any(), eq(true)))
-                .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(selectInterests.execute(any(), eq(true)))
+                .thenReturn(expectedResponse);
 
             mockMvc.perform(post("/api/onboarding/interests")
                     .param("shouldSkip", "true")
@@ -218,8 +224,8 @@ class OnboardingControllerTest {
                 true
             );
 
-            when(onboardingService.followInitialUsers(any(), eq(false)))
-                    .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(selectInitialUsers.execute(any(), eq(false)))
+                    .thenReturn(expectedResponse);
 
             mockMvc.perform(post("/api/onboarding/connections")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -237,8 +243,8 @@ class OnboardingControllerTest {
                 true
             );
 
-            when(onboardingService.followInitialUsers(any(), eq(true)))
-                .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(selectInitialUsers.execute(any(), eq(true)))
+                .thenReturn(expectedResponse);
 
             mockMvc.perform(post("/api/onboarding/connections")
                     .param("shouldSkip", "true")
@@ -267,8 +273,8 @@ class OnboardingControllerTest {
                 true
             );
 
-            when(onboardingService.followInitialUsers(any(), eq(false)))
-                .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(selectInitialUsers.execute(any(), eq(false)))
+                .thenReturn(expectedResponse);
 
             mockMvc.perform(post("/api/onboarding/connections")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -302,8 +308,8 @@ class OnboardingControllerTest {
                 false
             );
 
-            when(onboardingService.backToPreviousStep())
-                .thenReturn(ResponseEntity.ok(expectedResponse));
+            when(backPreviousStep.execute())
+                .thenReturn(expectedResponse);
 
             mockMvc.perform(patch("/api/onboarding/back"))
                 .andExpect(status().isOk())
@@ -314,8 +320,8 @@ class OnboardingControllerTest {
         @Test
         @DisplayName("2. Should return 400 when trying to go back from the first step")
         void shouldReturn400WhenAlreadyAtFirstStep() throws Exception {
-            when(onboardingService.backToPreviousStep())
-                    .thenThrow(new BadRequestException("Already at the initial onboarding step"));
+            when(backPreviousStep.execute())
+                .thenThrow(new IllegalArgumentException("Already at the initial onboarding step"));
 
             mockMvc.perform(patch("/api/onboarding/back"))
                 .andExpect(status().isBadRequest())
@@ -325,7 +331,7 @@ class OnboardingControllerTest {
         @Test
         @DisplayName("3. Should return 403 when trying to revert a completed onboarding")
         void shouldReturn403WhenOnboardingIsCompleted() throws Exception {
-            when(onboardingService.backToPreviousStep())
+            when(backPreviousStep.execute())
                 .thenThrow(new ForbiddenException("Onboarding has already been completed"));
 
             mockMvc.perform(patch("/api/onboarding/back"))
@@ -336,7 +342,7 @@ class OnboardingControllerTest {
         @Test
         @DisplayName("4. Should return 401 when user is not verified")
         void shouldReturn401WhenNotVerified() throws Exception {
-            when(onboardingService.backToPreviousStep())
+            when(backPreviousStep.execute())
                 .thenThrow(new ForbiddenException("Account not verified"));
 
             mockMvc.perform(patch("/api/onboarding/back"))
@@ -357,7 +363,7 @@ class OnboardingControllerTest {
                 false
             );
 
-            when(onboardingService.getCurrentStep()).thenReturn(expectedResponse);
+            when(getCurrentStep.execute()).thenReturn(expectedResponse);
 
             mockMvc.perform(get("/api/onboarding/step")
                     .contentType(MediaType.APPLICATION_JSON))
@@ -370,7 +376,7 @@ class OnboardingControllerTest {
         @Test
         @DisplayName("Should return 401 when user is not authenticated")
         void shouldReturn401WhenAnonymous() throws Exception {
-            when(onboardingService.getCurrentStep())
+            when(getCurrentStep.execute())
                 .thenThrow(new UnauthorizedException("Unauthorized - User must be logged in"));
 
             mockMvc.perform(get("/api/onboarding/step"))

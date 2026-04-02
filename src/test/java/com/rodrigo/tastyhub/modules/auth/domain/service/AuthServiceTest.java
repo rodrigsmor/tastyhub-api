@@ -318,7 +318,6 @@ class AuthServiceTest {
                 authService.verifyEmail(token);
             });
 
-            verify(onboardingService, never()).startOnboarding(any());
             verify(verificationTokenRepository, never()).delete(any());
         }
 
@@ -344,7 +343,6 @@ class AuthServiceTest {
                 authService.verifyEmail(token);
             });
 
-            verify(onboardingService, never()).startOnboarding(any());
             verify(verificationTokenRepository, never()).delete(any());
         }
 
@@ -375,7 +373,6 @@ class AuthServiceTest {
 
             assertNotEquals(UserStatus.PENDING, user.getStatus());
 
-            verify(onboardingService).startOnboarding(user);
             verify(verificationTokenRepository).delete(vToken);
 
             assertNotNull(SecurityContextHolder.getContext().getAuthentication());
