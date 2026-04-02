@@ -28,10 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 
@@ -200,7 +197,6 @@ class OnboardingServiceTest {
     @Nested
     @DisplayName("Tests for Select Interests")
     class SelectInterestsTests {
-
         @Test
         @DisplayName("Should update interests and advance to STEP_3 when not skipping")
         void shouldUpdateInterestsAndAdvanceToStep3() {
@@ -264,100 +260,74 @@ class OnboardingServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for Follow Initial Users Method (Step 3)")
+    @DisplayName("Tests for Follow Initial Users")
     class FollowInitialUsersTests {
-
         @Test
-        @DisplayName("1. Should follow users and complete onboarding successfully")
+        @DisplayName("Should follow users and complete onboarding when not skipping")
         void shouldFollowUsersAndCompleteOnboarding() {
-            fakeUser.setFollowing(new HashSet<>());
-            Set<Long> userIds = Set.of(10L, 20L);
-            var request = new OnboardingConnectionsRequest(userIds);
+            Long userId = 1L;
+            User userToFollow = new User();
+            userToFollow.setId(2L);
+            Collection<User> usersToFollow = List.of(userToFollow);
 
-            User target1 = new User(); target1.setId(10L);
-            User target2 = new User(); target2.setId(20L);
-            List<User> targetUsers = List.of(target1, target2);
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.findAllById(userIds)).thenReturn(targetUsers);
+            User spyUser = spy(fakeUser);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(spyUser));
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-            ResponseEntity<OnboardingProgressDto> response = onboardingService.followInitialUsers(request, false);
+            User result = onboardingService.followInitialUsers(
+                userId,
+                usersToFollow,
+                false
+            );
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
-            assertTrue(fakeUser.getFollowing().stream()
-                    .anyMatch(follow -> follow.getFollowing().equals(target1)),
-                "User should be following target1");
-
-            assertTrue(fakeUser.getFollowing().stream()
-                        .anyMatch(follow -> follow.getFollowing().equals(target2)),
-                "User should be following target2");
-            verify(userRepository).save(fakeUser);
+            verify(spyUser).followUser(userToFollow);
+            verify(spyUser).completeOnboarding();
+            assertEquals(OnboardingStatus.COMPLETED, result.getOnboardingStatus());
+            verify(userRepository).save(spyUser);
         }
 
         @Test
-        @DisplayName("2. Should skip following logic but still complete onboarding")
-        void shouldSkipAndCompleteOnboarding() {
-            OnboardingConnectionsRequest request = new OnboardingConnectionsRequest(Set.of(10L));
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
-
-            onboardingService.followInitialUsers(request, true);
-
-            verify(userRepository, never()).findAllById(anySet());
-
-            verify(userRepository, times(1)).save(fakeUser);
-
-            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
-        }
-
-        @Test
-        @DisplayName("3. Should not follow self if currentUser ID is in the list")
+        @DisplayName("Should not follow anyone if user attempts to follow themselves")
         void shouldNotFollowSelf() {
-            fakeUser.setId(1L);
-            fakeUser.setFollowing(new HashSet<>());
-            Set<Long> userIds = Set.of(1L);
-            var request = new OnboardingConnectionsRequest(userIds);
+            Long userId = 1L;
+            fakeUser.setId(userId);
+            Collection<User> usersToFollow = List.of(fakeUser);
 
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.findAllById(userIds)).thenReturn(List.of(fakeUser));
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
+            User spyUser = spy(fakeUser);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(spyUser));
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-            onboardingService.followInitialUsers(request, false);
+            onboardingService.followInitialUsers(
+                userId,
+                usersToFollow,
+                false
+            );
 
-            assertTrue(fakeUser.getFollowing().isEmpty(), "User should not be following themselves");
-            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
+            verify(spyUser, never()).followUser(any());
+            verify(spyUser).completeOnboarding();
         }
 
         @Test
-        @DisplayName("4. Should finalize onboarding even if request has no userIds")
-        void shouldCompleteEvenIfNoUsersSelected() {
-            var request = new OnboardingConnectionsRequest(Set.of());
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
+        @DisplayName("Should skip following but still complete onboarding when shouldSkip is true")
+        void shouldSkipFollowingButStillComplete() {
+            Long userId = 1L;
+            User anotherUser = new User();
+            anotherUser.setId(2L);
+            Collection<User> usersToFollow = List.of(anotherUser);
 
-            onboardingService.followInitialUsers(request, false);
+            User spyUser = spy(fakeUser);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(spyUser));
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
-            verify(userRepository, times(1)).save(any());
-        }
+            User result = onboardingService.followInitialUsers(
+                userId,
+                usersToFollow,
+                true
+            );
 
-        @Test
-        @DisplayName("5. Should handle empty list from repository gracefully")
-        void shouldHandleEmptyRepositoryResult() {
-            Set<Long> invalidIds = Set.of(999L);
-            var request = new OnboardingConnectionsRequest(invalidIds);
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.findAllById(invalidIds)).thenReturn(List.of());
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
-
-            onboardingService.followInitialUsers(request, false);
-
-            assertEquals(OnboardingStatus.COMPLETED, fakeUser.getOnboardingStatus());
-            assertTrue(fakeUser.getFollowing().isEmpty());
+            verify(spyUser, never()).followUser(any());
+            verify(spyUser).completeOnboarding();
+            assertEquals(OnboardingStatus.COMPLETED, result.getOnboardingStatus());
         }
     }
 
