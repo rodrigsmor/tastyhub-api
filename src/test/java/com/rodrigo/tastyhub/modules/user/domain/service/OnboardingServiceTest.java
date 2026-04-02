@@ -1,12 +1,10 @@
 package com.rodrigo.tastyhub.modules.user.domain.service;
 
 import com.rodrigo.tastyhub.modules.tags.domain.model.Tag;
-import com.rodrigo.tastyhub.modules.tags.domain.service.TagService;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.modules.user.domain.model.UserStatus;
 import com.rodrigo.tastyhub.modules.user.domain.repository.UserRepository;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
@@ -34,17 +32,8 @@ class OnboardingServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private SecurityService securityService;
-
-    @Mock
-    private UserService userService;
-
     @InjectMocks
     private OnboardingService onboardingService;
-
-    @Mock
-    private TagService tagService;
 
     private User fakeUser;
 
@@ -56,6 +45,7 @@ class OnboardingServiceTest {
         fakeUser.setId(1L);
         fakeUser.setUsername("old.username");
         fakeUser.setBio("Old bio");
+        fakeUser.setFollowers(new HashSet<>());
 
         fakeUser.setFollowedTags(new HashSet<>());
         fakeUser.setOnboardingStatus(OnboardingStatus.STEP_1);
@@ -194,8 +184,18 @@ class OnboardingServiceTest {
         @DisplayName("Should update interests and advance to STEP_3 when not skipping")
         void shouldUpdateInterestsAndAdvanceToStep3() {
             Long userId = 1L;
-            List<Tag> tagsToFollow = List.of(new Tag(1L, "Italian"), new Tag(2L, "Pasta"));
-            List<Tag> tagsToUnfollow = List.of(new Tag(3L, "Fast Food"));
+
+            Tag italian = new Tag(1L, "Italian");
+            italian.setFollowers(new HashSet<>());
+
+            Tag pasta = new Tag(2L, "Pasta");
+            pasta.setFollowers(new HashSet<>());
+
+            Tag fastFood = new Tag(3L, "Fast Food");
+            fastFood.setFollowers(new HashSet<>());
+
+            List<Tag> tagsToFollow = List.of(italian, pasta);
+            List<Tag> tagsToUnfollow = List.of(fastFood);
 
             when(userRepository.findById(userId)).thenReturn(Optional.of(fakeUser));
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
@@ -332,7 +332,6 @@ class OnboardingServiceTest {
         void shouldRevertFromStep3ToStep2() {
             fakeUser.setOnboardingStatus(OnboardingStatus.STEP_3);
             fakeUser.setStatus(UserStatus.ACTIVE);
-            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
@@ -358,7 +357,7 @@ class OnboardingServiceTest {
         @Test
         @DisplayName("Should throw UnauthorizedException if user is not verified")
         void shouldThrowUnauthorizedIfNotVerified() {
-            fakeUser.setOnboardingStatus(OnboardingStatus.STEP_2);
+            fakeUser.setOnboardingStatus(OnboardingStatus.PENDING_VERIFICATION);
             fakeUser.setStatus(UserStatus.PENDING);
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));

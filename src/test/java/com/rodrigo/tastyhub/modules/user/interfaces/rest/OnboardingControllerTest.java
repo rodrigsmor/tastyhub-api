@@ -6,10 +6,8 @@ import com.rodrigo.tastyhub.modules.user.application.dto.request.OnboardingInter
 import com.rodrigo.tastyhub.modules.user.application.dto.response.OnboardingProgressDto;
 import com.rodrigo.tastyhub.modules.user.application.usecases.*;
 import com.rodrigo.tastyhub.modules.user.domain.model.OnboardingStatus;
-import com.rodrigo.tastyhub.shared.config.security.SecurityService;
 import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.UnauthorizedException;
-import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,9 +40,6 @@ class OnboardingControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @MockitoBean
-    private SecurityService securityService;
 
     @MockitoBean
     private OnboardingGetCurrentStepUseCase getCurrentStep;
@@ -326,7 +321,7 @@ class OnboardingControllerTest {
         @DisplayName("2. Should return 400 when trying to go back from the first step")
         void shouldReturn400WhenAlreadyAtFirstStep() throws Exception {
             when(backPreviousStep.execute())
-                .thenThrow(new BadRequestException("Already at the initial onboarding step"));
+                .thenThrow(new IllegalArgumentException("Already at the initial onboarding step"));
 
             mockMvc.perform(patch("/api/onboarding/back"))
                 .andExpect(status().isBadRequest())
