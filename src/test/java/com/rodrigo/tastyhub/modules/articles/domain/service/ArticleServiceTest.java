@@ -392,4 +392,57 @@ class ArticleServiceTest {
             assertNull(result.getCoverAlt(), "Alt text should be null if URL is null according to business rule");
         }
     }
+
+    @Nested
+    @DisplayName("Tests for delete Article")
+    class DeleteArticleTests {
+        @Test
+        @DisplayName("Should successfully delete article when owner is valid")
+        void shouldDeleteArticleSuccessfully() {
+            Long articleId = 100L;
+            Long ownerId = 1L;
+
+            User author = new User();
+            author.setId(ownerId);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(articleId)).thenReturn(Optional.of(fakeArticle));
+
+            articleService.delete(articleId, ownerId);
+
+            verify(articleRepository, times(1)).delete(fakeArticle);
+        }
+
+        @Test
+        @DisplayName("Should throw ForbiddenException when a non-author tries to delete")
+        void shouldThrowForbiddenWhenNotOwner() {
+            Long articleId = 100L;
+            Long hackerId = 999L;
+
+            User author = new User();
+            author.setId(1L);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(articleId)).thenReturn(Optional.of(fakeArticle));
+
+            assertThrows(ForbiddenException.class, () ->
+                articleService.delete(articleId, hackerId)
+            );
+
+            verify(articleRepository, never()).delete(any(Article.class));
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when trying to delete non-existent article")
+        void shouldThrowNotFoundWhenArticleDoesNotExist() {
+            Long invalidId = 404L;
+            when(articleRepository.findById(invalidId)).thenReturn(Optional.empty());
+
+            assertThrows(ResourceNotFoundException.class, () ->
+                articleService.delete(invalidId, 1L)
+            );
+
+            verify(articleRepository, never()).delete((Article) any());
+        }
+    }
 }
