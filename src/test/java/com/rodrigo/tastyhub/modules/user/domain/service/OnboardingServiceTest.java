@@ -114,52 +114,52 @@ class OnboardingServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for Update User Profile Method")
+    @DisplayName("Tests for Update Profile")
     class UpdateProfileTests {
-
         @Test
-        @DisplayName("Should update profile data and set status to STEP_2")
+        @DisplayName("Should successfully update user profile and advance to STEP_2")
         void shouldUpdateProfileSuccessfully() {
             Long userId = 1L;
-            String newUsername = "new.username";
-            String newBio = "New bio";
-            String profileUrl = "https://cdn.com/pic.jpg";
-            String altText = "Alt text";
-            LocalDate dob = LocalDate.parse("1995-08-25");
+            String newUsername = "chef.tasty";
+            String newBio = "Passionate about spices.";
+            String newPic = "https://cdn.com/avatar.png";
+            String newAlt = "Profile of Chef Tasty";
+            LocalDate dob = LocalDate.of(1990, 5, 15);
 
-            when(onboardingService.findUserById(userId)).thenReturn(fakeUser);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(fakeUser));
             when(userRepository.existsByUsernameAndIdNot(newUsername, userId)).thenReturn(false);
-            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            User response = onboardingService.updateProfile(
+            User result = onboardingService.updateProfile(
                 userId,
                 newUsername,
                 newBio,
-                profileUrl,
-                altText,
+                newPic,
+                newAlt,
                 dob
             );
 
-            assertEquals(newUsername, response.getUsername());
-            assertEquals(newBio, response.getBio());
-            assertEquals(profileUrl, response.getProfilePictureUrl());
-            assertEquals(altText, response.getProfilePictureAlt());
-            assertEquals(dob, response.getDateOfBirth());
-            assertEquals(OnboardingStatus.STEP_2, response.getOnboardingStatus());
-
+            assertAll(
+                () -> assertEquals(newUsername, result.getUsername()),
+                () -> assertEquals(newBio, result.getBio()),
+                () -> assertEquals(newPic, result.getProfilePictureUrl()),
+                () -> assertEquals(newAlt, result.getProfilePictureAlt()),
+                () -> assertEquals(dob, result.getDateOfBirth()),
+                () -> assertEquals(OnboardingStatus.STEP_2, result.getOnboardingStatus())
+            );
             verify(userRepository).save(fakeUser);
         }
 
         @Test
-        @DisplayName("Should throw error if username is already taken")
-        void shouldThrowErrorIfUsernameTaken() {
+        @DisplayName("Should throw BadCredentialsException when username is already taken")
+        void shouldThrowExceptionWhenUsernameTaken() {
             Long userId = 1L;
-            String takenUsername = "taken.user";
+            String takenUsername = "already.exists";
 
-            when(onboardingService.findUserById(userId)).thenReturn(fakeUser);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(fakeUser));
             when(userRepository.existsByUsernameAndIdNot(takenUsername, userId)).thenReturn(true);
 
-            assertThrows(BadCredentialsException.class, () ->
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 onboardingService.updateProfile(
                     userId,
                     takenUsername,
@@ -170,27 +170,30 @@ class OnboardingServiceTest {
                 )
             );
 
+            assertEquals("Invalid input or username already taken", exception.getMessage());
             verify(userRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should not update profile picture if profileUrl is null")
-        void shouldNotUpdatePictureIfUrlIsNull() {
-            fakeUser.setProfilePictureUrl("old-url.jpg");
-            when(onboardingService.findUserById(1L)).thenReturn(fakeUser);
-            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
+        @DisplayName("Should not overwrite profile picture if profileUrl is null")
+        void shouldKeepOldProfilePictureIfUrlIsNull() {
+            fakeUser.setProfilePictureUrl("old-image.jpg");
+            fakeUser.setProfilePictureAlt("Old alt");
 
-            User response = onboardingService.updateProfile(
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+            User result = onboardingService.updateProfile(
                 1L,
-                "user",
+                "new.user",
                 "bio",
                 null,
                 "new alt",
                 LocalDate.now()
             );
 
-            assertEquals("old-url.jpg", response.getProfilePictureUrl()); // Manteve a antiga
-            verify(userRepository).save(fakeUser);
+            assertEquals("old-image.jpg", result.getProfilePictureUrl());
+            assertEquals("Old alt", result.getProfilePictureAlt());
         }
     }
 
