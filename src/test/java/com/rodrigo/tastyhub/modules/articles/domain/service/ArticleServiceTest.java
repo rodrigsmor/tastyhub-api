@@ -182,4 +182,60 @@ class ArticleServiceTest {
             verify(articleRepository).findAll(any(Specification.class), any(Pageable.class));
         }
     }
+
+    @Nested
+    @DisplayName("Tests for create Article")
+    class CreateArticleTests {
+        @Test
+        @DisplayName("Should successfully create and save an article")
+        void shouldCreateArticleSuccessfully() {
+            String title = "New Article";
+            String content = "Full content of the article...";
+            User author = new User();
+            author.setId(1L);
+            String language = "pt-BR";
+            Boolean isPublic = true;
+
+            when(articleRepository.save(any(Article.class))).thenAnswer(i -> i.getArgument(0));
+
+            Article result = articleService.create(title, content, isPublic, language, author);
+
+            assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals(title, result.getTitle()),
+                () -> assertEquals(content, result.getContent()),
+                () -> assertEquals(author, result.getAuthor()),
+                () -> assertEquals(language, result.getLanguage()),
+                () -> assertTrue(result.isPublic())
+            );
+
+            verify(articleRepository, times(1)).save(any(Article.class));
+        }
+
+        @Test
+        @DisplayName("Should throw NullPointerException when required fields are missing")
+        void shouldThrowExceptionWhenRequiredFieldsAreMissing() {
+            User author = new User();
+
+            assertThrows(NullPointerException.class, () ->
+                articleService.create(null, "content", true, "en-US", author)
+            );
+
+            assertThrows(NullPointerException.class, () ->
+                articleService.create("Title", null, true, "en-US", author)
+            );
+
+            verify(articleRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should use default visibility (true) when isPublic is null")
+        void shouldDefaultToPublicWhenIsPublicIsNull() {
+            when(articleRepository.save(any(Article.class))).thenAnswer(i -> i.getArgument(0));
+
+            Article result = articleService.create("Title", "Content", null, "en-US", new User());
+
+            assertTrue(result.isPublic(), "Article should be public by default if isPublic is null");
+        }
+    }
 }
