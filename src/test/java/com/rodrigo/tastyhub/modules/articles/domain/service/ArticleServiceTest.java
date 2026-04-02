@@ -1,16 +1,25 @@
 package com.rodrigo.tastyhub.modules.articles.domain.service;
 
+import com.rodrigo.tastyhub.modules.articles.application.dto.response.ListArticlesQuery;
 import com.rodrigo.tastyhub.modules.articles.domain.model.Article;
+import com.rodrigo.tastyhub.modules.articles.domain.model.ArticleSortBy;
 import com.rodrigo.tastyhub.modules.articles.domain.repository.ArticleRepository;
+import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.enums.SortDirection;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Optional;
 import java.math.BigDecimal;
@@ -98,6 +107,79 @@ class ArticleServiceTest {
 
             assertEquals("Article not found with the provided ID", exception.getMessage());
             verify(articleRepository).findById(invalidId);
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for findAll (Articles with Pagination and Filters)")
+    class FindAllArticlesTests {
+        @Test
+        @DisplayName("Should call repository with correct pagination and specifications")
+        void shouldCallRepositoryWithCorrectParameters() {
+            ListArticlesQuery query = new ListArticlesQuery(
+                "cooking",
+                0,
+                10,
+                ArticleSortBy.CREATED_AT,
+                SortDirection.DESC,
+                "en-US",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+
+            User owner = new User();
+            owner.setId(1L);
+
+            UserCollection collection = new UserCollection();
+            collection.setId(50L);
+
+            Page<Article> expectedPage = new PageImpl<>(List.of(fakeArticle));
+
+            when(articleRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(expectedPage);
+
+            Page<Article> result = articleService.findAll(query, owner, collection);
+
+            assertNotNull(result);
+            assertEquals(1, result.getContent().size());
+
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(articleRepository).findAll(any(Specification.class), pageableCaptor.capture());
+
+            Pageable capturedPageable = pageableCaptor.getValue();
+            assertEquals(0, capturedPageable.getPageNumber());
+            assertEquals(10, capturedPageable.getPageSize());
+            assertTrue(capturedPageable.getSort().getOrderFor("createdAt").isDescending());
+        }
+
+        @Test
+        @DisplayName("Should handle null owner and collection gracefully")
+        void shouldHandleNullContexts() {
+            ListArticlesQuery query = new ListArticlesQuery(
+                null,
+                0,
+                10,
+                ArticleSortBy.TITLE,
+                SortDirection.ASC,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+
+            when(articleRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+            articleService.findAll(query, null, null);
+
+            verify(articleRepository).findAll(any(Specification.class), any(Pageable.class));
         }
     }
 }
