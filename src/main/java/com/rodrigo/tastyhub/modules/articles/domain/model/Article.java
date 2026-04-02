@@ -2,6 +2,8 @@ package com.rodrigo.tastyhub.modules.articles.domain.model;
 
 import com.rodrigo.tastyhub.modules.comments.domain.model.Comment;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -79,5 +81,44 @@ public class Article {
         this.statistics = new ArticleStatistics();
         this.statistics.setArticle(this);
         this.comments = new ArrayList<>();
+    }
+
+    public void update(
+        String title,
+        String content,
+        Boolean isPublic,
+        String language,
+        Long userId
+    ) {
+        this.validateOwnership(userId);
+
+        this.validateNotBlank(title, "Title");
+        this.validateNotBlank(content, "Content");
+        this.validateNotBlank(language, "Language");
+
+        if (title != null) this.title = title.trim();
+        if (title != null) this.content = content.trim();
+        if (title != null) this.language = language.trim();
+        if (title != null) this.isPublic = isPublic;
+    }
+
+    public void updateCover(
+        String newCoverUrl,
+        String newCoverAlt
+    ) {
+        this.coverUrl = newCoverUrl;
+        this.coverAlt = (newCoverUrl == null) ? null : newCoverAlt;
+    }
+
+    public void validateOwnership(Long currentUserId) {
+        if (this.author == null || !this.author.getId().equals(currentUserId)) {
+            throw new ForbiddenException("You are not the author of this recipe and cannot modify it.");
+        }
+    }
+
+    private void validateNotBlank(String value, String fieldName) {
+        if (value != null && value.trim().isBlank()) {
+            throw new DomainException(fieldName + " cannot be empty");
+        }
     }
 }

@@ -324,13 +324,13 @@ public class RecipeController {
         value = "/{id}/cover",
         consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    public ResponseEntity<FullRecipeDto> updateRecipeCover(
+    public ResponseEntity<FullRecipeDto> updateCover(
         @PathVariable("id") Long id,
 
-        @Parameter(description = "Profile picture file")
+        @Parameter(description = "New Recipe Cover file")
         @RequestPart(value = "file") MultipartFile file,
 
-        @Parameter(description = "Profile picture alternative text")
+        @Parameter(description = "New Recipe alternative text")
         @RequestPart(value = "alternative_text", required = false) String alternativeText
     ) {
         FullRecipeDto recipe = this.updateRecipeCover.execute(id, file, alternativeText);

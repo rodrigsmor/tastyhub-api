@@ -71,6 +71,48 @@ public class ArticleService {
         return articleRepository.save(article);
     }
 
+    public Article update(
+        Long articleId,
+        String title,
+        String content,
+        Boolean isPublic,
+        String language,
+        Long ownerId
+    ) {
+        Article article = this.findByIdOrThrow(articleId);
+
+        article.update(
+            title,
+            content,
+            isPublic,
+            language,
+            ownerId
+        );
+
+        return articleRepository.save(article);
+    }
+
+    public Article updateCover(
+        Long articleId,
+        String newCoverUrl,
+        String newAlternativeText,
+        Long userId
+    ) {
+        Article article = this.findByIdOrThrow(articleId);
+        article.validateOwnership(userId);
+        article.updateCover(newCoverUrl, newAlternativeText);
+        return articleRepository.save(article);
+    }
+
+
+    public void delete(Long articleId, Long ownerId) {
+        Article article = this.findByIdOrThrow(articleId);
+
+        article.validateOwnership(ownerId);
+
+        articleRepository.delete(article);
+    }
+
     @Transactional
     private Sort buildSort(ArticleSortBy sortBy, SortDirection direction) {
         String field = switch (sortBy) {

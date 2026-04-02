@@ -1,12 +1,12 @@
 package com.rodrigo.tastyhub.modules.articles.interfaces.rest;
 
 import com.rodrigo.tastyhub.modules.articles.application.dto.request.CreateArticleDto;
+import com.rodrigo.tastyhub.modules.articles.application.dto.request.UpdateArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ArticlePaginationDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.FullArticleDto;
 import com.rodrigo.tastyhub.modules.articles.application.dto.response.ListArticlesQuery;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.CreateArticleUseCase;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.GetArticleByIdUseCase;
-import com.rodrigo.tastyhub.modules.articles.application.usecases.ListArticlesUseCase;
+import com.rodrigo.tastyhub.modules.articles.application.usecases.*;
+import com.rodrigo.tastyhub.modules.user.application.dto.response.UserSummaryDto;
 import com.rodrigo.tastyhub.shared.dto.response.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,8 +20,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -37,15 +39,24 @@ public class ArticleController {
     private final CreateArticleUseCase createArticle;
     private final GetArticleByIdUseCase getArticleById;
     private final ListArticlesUseCase listArticles;
+    private final UpdateArticleByIdUseCase updateArticleById;
+    private final DeleteArticleByIdUseCase deleteArticleById;
+    private final UpdateArticleCoverUseCase updateArticleCover;
 
     public ArticleController(
         ListArticlesUseCase listArticles,
         GetArticleByIdUseCase getArticleById,
-        CreateArticleUseCase createArticle
+        CreateArticleUseCase createArticle,
+        UpdateArticleByIdUseCase updateArticleById,
+        DeleteArticleByIdUseCase deleteArticleById,
+        UpdateArticleCoverUseCase updateArticleCover
     ) {
         this.createArticle = createArticle;
         this.getArticleById = getArticleById;
         this.listArticles = listArticles;
+        this.updateArticleById = updateArticleById;
+        this.deleteArticleById = deleteArticleById;
+        this.updateArticleCover = updateArticleCover;
     }
 
     @Operation(
@@ -193,5 +204,89 @@ public class ArticleController {
     ) {
         ArticlePaginationDto response = this.listArticles.execute(request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Update an existing Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Updates article details including titles, content, visibility and language."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Article updated successfully",
+            content = @Content(schema = @Schema(implementation = FullArticleDto.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid input data or validation failed"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: You are not the owner of this article"),
+        @ApiResponse(responseCode = "404", description = "Article not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<FullArticleDto> updateArticleById(
+        @PathVariable("id") Long id,
+        @RequestBody @Valid UpdateArticleDto body
+    ) {
+        FullArticleDto response = this.updateArticleById.execute(id, body);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Update cover of Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Uploads a new cover and updates the alternative text. The previous file will be replaced."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Article's cover updated successfully",
+            content = @Content(schema = @Schema(implementation = UserSummaryDto.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid file format or size"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error during file storage")
+    })
+    @PatchMapping(
+            value = "/{id}/cover",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<FullArticleDto> updateCover(
+        @PathVariable("id") Long id,
+
+        @Parameter(description = "New Article Cover file")
+        @RequestPart(value = "file") MultipartFile file,
+
+        @Parameter(description = "Article alternative text")
+        @RequestPart(value = "alternative_text", required = false) String alternativeText
+    ) {
+        FullArticleDto recipe = this.updateArticleCover.execute(id, file, alternativeText);
+
+        URI uri = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}/cover")
+            .buildAndExpand(recipe.id())
+            .toUri();
+
+        return ResponseEntity.created(uri).body(recipe);
+    }
+
+    @Operation(
+        summary = "Delete an Article",
+        security = { @SecurityRequirement(name = "bearerAuth") },
+        description = "Permanently removes an article from the platform. Only the author or an administrator can perform this action."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Article deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: You do not have permission to delete this article"),
+        @ApiResponse(responseCode = "404", description = "Article not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteArticleById(
+            @PathVariable("id") Long articleId
+    ) {
+        this.deleteArticleById.execute(articleId);
+        return ResponseEntity.noContent().build();
     }
 }
