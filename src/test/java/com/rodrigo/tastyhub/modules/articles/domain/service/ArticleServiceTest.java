@@ -7,6 +7,8 @@ import com.rodrigo.tastyhub.modules.articles.domain.repository.ArticleRepository
 import com.rodrigo.tastyhub.modules.collections.domain.model.UserCollection;
 import com.rodrigo.tastyhub.modules.user.domain.model.User;
 import com.rodrigo.tastyhub.shared.enums.SortDirection;
+import com.rodrigo.tastyhub.shared.exception.DomainException;
+import com.rodrigo.tastyhub.shared.exception.ForbiddenException;
 import com.rodrigo.tastyhub.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,8 +24,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Optional;
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -236,6 +236,87 @@ class ArticleServiceTest {
             Article result = articleService.create("Title", "Content", null, "en-US", new User());
 
             assertTrue(result.isPublic(), "Article should be public by default if isPublic is null");
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests for update Article")
+    class UpdateArticleTests {
+        @Test
+        @DisplayName("Should successfully update article when owner is valid and fields are provided")
+        void shouldUpdateArticleSuccessfully() {
+            Long articleId = 100L;
+            Long ownerId = 1L;
+            String newTitle = "Updated Title";
+
+            User author = new User();
+            author.setId(ownerId);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(articleId)).thenReturn(Optional.of(fakeArticle));
+            when(articleRepository.save(any(Article.class))).thenAnswer(i -> i.getArgument(0));
+
+            Article result = articleService.update(
+                articleId,
+                newTitle,
+                "New content",
+                false,
+                "pt-BR",
+                ownerId
+            );
+
+            assertEquals(newTitle, result.getTitle());
+            assertFalse(result.isPublic());
+            assertEquals("pt-BR", result.getLanguage());
+            verify(articleRepository).save(fakeArticle);
+        }
+
+        @Test
+        @DisplayName("Should throw ForbiddenException when a different user tries to update")
+        void shouldThrowForbiddenWhenNotOwner() {
+            Long articleId = 100L;
+            Long hackerId = 999L;
+
+            User author = new User();
+            author.setId(1L);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(articleId)).thenReturn(Optional.of(fakeArticle));
+
+            assertThrows(ForbiddenException.class, () ->
+                articleService.update(
+                    articleId,
+                "Title",
+                    "Content",
+                    true,
+                    "en-US",
+                    hackerId
+                )
+            );
+
+            verify(articleRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should throw DomainException when provided fields are blank")
+        void shouldThrowExceptionWhenFieldsAreBlank() {
+            Long ownerId = 1L;
+            User author = new User();
+            author.setId(ownerId);
+            fakeArticle.setAuthor(author);
+
+            when(articleRepository.findById(100L)).thenReturn(Optional.of(fakeArticle));
+
+            assertThrows(DomainException.class, () ->
+                articleService.update(
+                    100L,
+                    "   ",
+                    "content",
+                    true,
+                    "en-US",
+                    ownerId
+                )
+            );
         }
     }
 }
