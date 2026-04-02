@@ -97,9 +97,9 @@ public class Article {
         this.validateNotBlank(language, "Language");
 
         if (title != null) this.title = title.trim();
-        if (title != null) this.content = content.trim();
-        if (title != null) this.language = language.trim();
-        if (title != null) this.isPublic = isPublic;
+        if (content != null) this.content = content.trim();
+        if (language != null) this.language = language.trim();
+        if (isPublic != null) this.isPublic = isPublic;
     }
 
     public void updateCover(
@@ -112,7 +112,7 @@ public class Article {
 
     public void validateOwnership(Long currentUserId) {
         if (this.author == null || !this.author.getId().equals(currentUserId)) {
-            throw new ForbiddenException("You are not the author of this recipe and cannot modify it.");
+            throw new ForbiddenException("You are not the author of this article and cannot modify it.");
         }
     }
 
