@@ -79,8 +79,6 @@ class RecipeServiceTest {
             "$"
         );
 
-
-
         fakeRecipe.setCurrency(currency);
         fakeRecipe.setIngredients(
             new ArrayList<>(
