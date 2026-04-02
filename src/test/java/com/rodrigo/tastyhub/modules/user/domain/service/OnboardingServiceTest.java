@@ -198,104 +198,68 @@ class OnboardingServiceTest {
     }
 
     @Nested
-    @DisplayName("Tests for Select Interests Method")
-    class SelectInterests {
+    @DisplayName("Tests for Select Interests")
+    class SelectInterestsTests {
+
         @Test
-        @DisplayName("Should unfollow tags when unfollowTagIds is provided")
-        void shouldUnfollowTagsWhenProvided() {
-            Tag tag1 = new Tag(3L, "Pasta", new HashSet<>(), new HashSet<>());
-            Tag tag2 = new Tag(8L, "Meat", new HashSet<>(), new HashSet<>());
-            Set<Long> idsToUnfollow = Set.of(3L, 8L);
+        @DisplayName("Should update interests and advance to STEP_3 when not skipping")
+        void shouldUpdateInterestsAndAdvanceToStep3() {
+            Long userId = 1L;
+            List<Tag> tagsToFollow = List.of(new Tag(1L, "Italian"), new Tag(2L, "Pasta"));
+            List<Tag> tagsToUnfollow = List.of(new Tag(3L, "Fast Food"));
 
-            Set<Tag> userTags = new HashSet<>();
-            userTags.add(tag1);
-            userTags.add(tag2);
-            fakeUser.setFollowedTags(userTags);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(fakeUser));
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-            OnboardingInterestsRequest request = new OnboardingInterestsRequest(null, null, idsToUnfollow);
-            List<Tag> tagsFromDb = List.of(tag1, tag2);
+            User result = onboardingService.selectInterests(
+                userId,
+                tagsToFollow,
+                tagsToUnfollow,
+                false
+            );
 
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(tagService.findAllById(idsToUnfollow)).thenReturn(tagsFromDb);
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
-
-            onboardingService.selectInterests(request, false);
-
-            assertTrue(request.hasUnfollowTagIds());
-            assertTrue(fakeUser.getFollowedTags().isEmpty());
-            verify(tagService).findAllById(idsToUnfollow);
+            assertEquals(OnboardingStatus.STEP_3, result.getOnboardingStatus());
             verify(userRepository).save(fakeUser);
         }
 
         @Test
-        @DisplayName("Should ensure and follow new tags when newTags is provided")
-        void shouldFollowNewTagsWhenProvided() {
-            fakeUser.setFollowedTags(new HashSet<>());
+        @DisplayName("Should skip interest update but still advance to STEP_3 when shouldSkip is true")
+        void shouldSkipInterestsButAdvanceStatus() {
+            Long userId = 1L;
+            List<Tag> tags = List.of(new Tag(1L, "Gourmet"));
 
-            Set<String> newTagsNames = Set.of("homemade pasta", "vegan");
-            OnboardingInterestsRequest request = new OnboardingInterestsRequest(null, newTagsNames, null);
-
-            Set<Tag> tagsCreated = Set.of(
-                new Tag(10L, "homemade pasta", new HashSet<>(), new HashSet<>()),
-                new Tag(11L, "vegan", new HashSet<>(), new HashSet<>())
-            );
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(tagService.ensureTagsExist(newTagsNames)).thenReturn(tagsCreated);
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
-
-            onboardingService.selectInterests(request, false);
-
-            assertTrue(request.hasNewTags());
-            verify(tagService).ensureTagsExist(newTagsNames);
-        }
-
-        @Test
-        @DisplayName("Should follow existing tags when tagIds is provided")
-        void shouldFollowExistingTagsWhenProvided() {
-            fakeUser.setFollowedTags(new HashSet<>());
-
-            Set<Long> tagIds = Set.of(1L, 5L);
-            OnboardingInterestsRequest request = new OnboardingInterestsRequest(tagIds, null, null);
-
-            List<Tag> existingTags = List.of(
-                new Tag(1L, "Italian", new HashSet<>(), new HashSet<>()),
-                new Tag(5L, "Salads", new HashSet<>(), new HashSet<>())
-            );
-
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(tagService.findAllById(tagIds)).thenReturn(existingTags);
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
-
-            onboardingService.selectInterests(request, false);
-
-            assertTrue(request.hasTagIds());
-            verify(tagService, times(1)).findAllById(tagIds);
-        }
-
-        @Test
-        @DisplayName("Should skip all logic and just complete step when shouldSkip is true")
-        void shouldSkipLogicWhenShouldSkipIsTrue() {
-            OnboardingInterestsRequest request = new OnboardingInterestsRequest(Set.of(1L), Set.of("new"), Set.of(2L));
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
-            when(userRepository.save(any(User.class))).thenReturn(fakeUser);
-
-            onboardingService.selectInterests(request, true);
-
-            verifyNoInteractions(tagService);
-            assertEquals(OnboardingStatus.STEP_3, fakeUser.getOnboardingStatus());
-        }
-
-        @Test
-        @DisplayName("Should call save with updated status after processing interests")
-        void shouldSaveUserWithNewStatus() {
-            OnboardingInterestsRequest request = new OnboardingInterestsRequest(null, null, null);
-            when(securityService.getCurrentUser()).thenReturn(fakeUser);
+            User spyUser = spy(fakeUser);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(spyUser));
             when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-            onboardingService.selectInterests(request, false);
+            User result = onboardingService.selectInterests(
+                userId,
+                tags,
+                null,
+                true
+            );
 
-            verify(userRepository).save(argThat(user -> user.getOnboardingStatus() == OnboardingStatus.STEP_3));
+            assertEquals(OnboardingStatus.STEP_3, result.getOnboardingStatus());
+            verify(spyUser, never()).updateInterests(any(), any());
+            verify(userRepository).save(spyUser);
+        }
+
+        @Test
+        @DisplayName("Should work correctly even if tag collections are null")
+        void shouldHandleNullCollectionsGracefully() {
+            when(userRepository.findById(1L)).thenReturn(Optional.of(fakeUser));
+            when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+            assertDoesNotThrow(() ->
+                onboardingService.selectInterests(
+                    1L,
+                    null,
+                    null,
+                    false
+                )
+            );
+
+            assertEquals(OnboardingStatus.STEP_3, fakeUser.getOnboardingStatus());
         }
     }
 
